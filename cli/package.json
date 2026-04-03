@@ -1,0 +1,12 @@
+{
+	"name": "@oari/ilp-trust-cli",
+	"type": "module",
+	"version": "1.0.0",
+	"bin": {
+		"ilp-trust": "./cli.js"
+	},
+	"dependencies": {
+		"@cef-ebsi/cli": "1.7.2",
+		"minimist": "1.2.8"
+	}
+}

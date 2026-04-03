@@ -10,18 +10,16 @@ export async function ebsiCli(...commands){
 	}
 
 	return await new Promise((resolve, reject) => {
+		let settled = false
+		let stderrBuffer = ''
+		let stdoutBuffer = ''
+		let stdoutTimeout
+
+		const responses = []
 		const executable = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 		const child = spawn(executable, ['@cef-ebsi/cli'], {
 			stdio: ['pipe', 'pipe', 'pipe']
 		})
-
-		let stdoutBuffer = ''
-		let stderrBuffer = ''
-		const responses = []
-		let settled = false
-		const timeout = setTimeout(() => {
-			fail(new Error('Timed out while waiting for EBSI CLI JSON responses.'))
-		}, 30_000)
 
 		const cleanup = () => {
 			child.stdout.removeAllListeners()
@@ -29,119 +27,71 @@ export async function ebsiCli(...commands){
 			child.removeAllListeners()
 		}
 
-		const fail = (error) => {
-			if(settled){
+		const processBuffer = () => {
+			if(!stdoutBuffer.endsWith('==> \x1b[5G'))
 				return
-			}
 
+			clearTimeout(stdoutTimeout)
+			stdoutTimeout = setTimeout(
+				() => {
+					const outputs = stdoutBuffer
+						.split(/\n.*==>.*(\r\n)?/g)
+						.slice(2)
+						.map(part => part?.trim())
+						.filter(part => part && part.length > 0)
+
+					for(let output of outputs){
+						if(output.startsWith('{'))
+							responses.push(JSON.parse(output))
+						else
+							responses.push(output)
+					}
+
+					next()
+				},
+				500
+			)
+		}
+
+		const fail = (error) => {
+			if(settled)
+				return
+			
 			settled = true
-			clearTimeout(timeout)
 			cleanup()
 
 			error.stdout = stdoutBuffer
 			error.stderr = stderrBuffer
 
-			if(child.pid){
+			if(child.pid)
 				child.kill('SIGTERM')
-			}
 
 			reject(error)
 		}
 
 		const succeed = () => {
-			if(settled){
+			if(settled)
 				return
-			}
-
+			
 			settled = true
-			clearTimeout(timeout)
 			cleanup()
 
-			if(child.pid){
+			if(child.pid)
 				child.kill('SIGTERM')
-			}
 
 			resolve(responses)
 		}
 
-		const parseJsonObjects = (input) => {
-			const objects = []
-			let start = -1
-			let depth = 0
-			let inString = false
-			let escaped = false
-			let consumedUntil = 0
-
-			for(let i = 0; i < input.length; i++){
-				const char = input[i]
-
-				if(inString){
-					if(escaped){
-						escaped = false
-						continue
-					}
-
-					if(char === '\\'){
-						escaped = true
-						continue
-					}
-
-					if(char === '"'){
-						inString = false
-					}
-
-					continue
-				}
-
-				if(char === '"'){
-					inString = true
-					continue
-				}
-
-				if(char === '{'){
-					if(depth === 0){
-						start = i
-					}
-					depth += 1
-					continue
-				}
-
-				if(char === '}'){
-					if(depth > 0){
-						depth -= 1
-					}
-
-					if(depth === 0 && start !== -1){
-						const candidate = input.slice(start, i + 1)
-						try{
-							objects.push(JSON.parse(candidate))
-							consumedUntil = i + 1
-						}catch{
-							// Keep collecting data for a complete JSON block.
-						}
-						start = -1
-					}
-				}
-			}
-
-			return {
-				objects,
-				remainder: input.slice(consumedUntil)
-			}
+		const next = () => {
+			if(commands.length === 0)
+				succeed()
+			else
+				child.stdin.write(`${commands.shift()}\n`)
 		}
 
 		child.stdout.on('data', (chunk) => {
 			stdoutBuffer += chunk.toString('utf8')
-			const { objects, remainder } = parseJsonObjects(stdoutBuffer)
-			stdoutBuffer = remainder
-
-			for(const object of objects){
-				responses.push(object)
-			}
-
-			if(responses.length >= commandList.length){
-				succeed()
-			}
+			processBuffer()
 		})
 
 		child.stderr.on('data', (chunk) => {
@@ -157,16 +107,9 @@ export async function ebsiCli(...commands){
 				return
 			}
 
-			if(responses.length >= commandList.length){
-				succeed()
-				return
-			}
-
 			fail(new Error(`EBSI CLI terminated before all responses were collected (code ${code ?? 'null'}).`))
 		})
 
-		for(const command of commandList){
-			child.stdin.write(`${command}\n`)
-		}
+		next()
 	})
 }

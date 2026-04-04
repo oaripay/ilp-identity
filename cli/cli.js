@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
+import os from 'os'
 import fs from 'fs'
+import path from 'path'
 import minimist from 'minimist'
-import pkg from './package.json' with { type: 'json' }
 import { ebsiCli } from './ebsi.js'
 import { startRegistry } from '../registry/registry.js'
 
 const args = minimist(process.argv.slice(2))
-
-console.log(`*** ILP Trust CLI ${pkg.version} ***`)
 
 const actions = {
 	wallet: {
@@ -18,11 +17,13 @@ const actions = {
 				return
 			}
 
-			const [ wallet ] = await ebsiCli(
-				'using user ES256 did1'
+			const outputs = await ebsiCli(
+				'using user ES256K did1',
+				'using user ES256 did1',
+				'view user',
 			)
 
-			const resultJson = JSON.stringify(wallet, null, 4)
+			const resultJson = JSON.stringify(outputs.at(-1), null, 4)
 
 			if(args.outfile){
 				fs.writeFileSync(args.outfile, resultJson)
@@ -33,13 +34,35 @@ const actions = {
 		}
 	},
 	issue: {
-		async accred(){
-			const issuerWallet = JSON.parse(fs.readFileSync(args.issuer.wallet, 'utf-8'))
-
-			console.log(`accrediting ${args.subject.did} as ${issuerWallet.did} ...`)
+		async onboard(){
+			console.log(`creating onboarding for ${args.subject.did} ...`)
 
 			const outputs = await ebsiCli(
-				`using user ES256 did1 ${issuerWallet.keys.ES256.privateKeyHex} ${issuerWallet.did}`,
+				`issuerWallet: load ${args.issuer.wallet}`,
+				`using user issuerWallet`,
+				`run issueVcOnboard ${args.subject.did}`
+			)
+
+			const vcJwt = outputs.at(-1)
+			const [ vc ] = await ebsiCli(
+				`compute decodeJWT ${vcJwt}`
+			)
+			
+			const resultJson = JSON.stringify(vc, null, 4)
+
+			if(args.outfile){
+				fs.writeFileSync(args.outfile, resultJson)
+				console.log(`onboarding credential written to ${args.outfile}`)
+			}else{
+				console.log(resultJson)
+			}
+		},
+		async accred(){
+			console.log(`accrediting ${args.subject.did} ...`)
+
+			const outputs = await ebsiCli(
+				`issuerWallet: load ${args.issuer.wallet}`,
+				`using user issuerWallet`,
 				`run issueVcTAO ${args.subject.did}`
 			)
 
@@ -58,9 +81,41 @@ const actions = {
 			}
 		}
 	},
-	chain: {
-		async put(){
+	register: {
+		async did(){
+			const extraCommands = []
 			
+			console.log(`registering did on chain ...`)
+
+			if(args.lecr){
+				const tempFile = path.join(os.tmpdir(), 'ebsi.tmp.txt')
+				const serviceJson = JSON.stringify({
+					id: args.lecr.split('://')[1],
+					type: 'LegalEntityCredentialRegistry2024',
+					serviceEndpoint: args.lecr
+				})
+
+				fs.writeFileSync(tempFile, serviceJson.replaceAll('"', '\\"'))
+
+				extraCommands.push(
+					`data: load ${tempFile}`,
+					`did addService user.did data`
+				)
+			}
+
+			const vc = JSON.parse(fs.readFileSync(args.vc, 'utf-8'))
+			const outputs = await ebsiCli(
+				`userWallet: load ${args.wallet}`,
+				`using user userWallet`,
+				`run registerDidDocument ${vc.data}.${vc.signature}`,
+				...extraCommands
+			)
+
+			for(let output of outputs){
+				console.log(output)
+			}
+
+			console.log('all done')
 		}
 	},
 	registry: {

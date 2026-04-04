@@ -58,20 +58,32 @@ const actions = {
 			}
 		},
 		async accred(){
+			const type = args.type ?? 'TI'
+
 			console.log(`accrediting ${args.subject.did} ...`)
 
-			const outputs = await ebsiCli(
+			const issueOutputs = await ebsiCli(
 				`issuerWallet: load ${args.issuer.wallet}`,
 				`using user issuerWallet`,
-				`run issueVcTAO ${args.subject.did}`
+				`run issueVcTAO ${args.subject.did}`,
+				`run preregisterIssuer ${args.subject.did} ${type} vcJwt`,
 			)
 
-			const vcJwt = outputs.at(-1)
+			const vcJwt = issueOutputs.at(-1)
 			const [ vc ] = await ebsiCli(
 				`compute decodeJWT ${vcJwt}`
 			)
-			
 			const resultJson = JSON.stringify(vc, null, 4)
+
+			console.log(`preregistering as ${type}`)
+
+			const preregisterOutputs = await ebsiCli(
+				`issuerWallet: load ${args.issuer.wallet}`,
+				`using user issuerWallet`,
+				`run preregisterIssuer ${args.subject.did} ${type} ${vcJwt}`,
+			)
+
+			console.log(preregisterOutputs.at(-1))
 
 			if(args.outfile){
 				fs.writeFileSync(args.outfile, resultJson)
@@ -109,6 +121,22 @@ const actions = {
 				`using user userWallet`,
 				`run registerDidDocument ${vc.data}.${vc.signature}`,
 				...extraCommands
+			)
+
+			for(let output of outputs){
+				console.log(output)
+			}
+
+			console.log('all done')
+		},
+		async issuer(){
+			console.log(`registering trusted issuer on chain ...`)
+
+			const vc = JSON.parse(fs.readFileSync(args.vc, 'utf-8'))
+			const outputs = await ebsiCli(
+				`userWallet: load ${args.wallet}`,
+				`using user userWallet`,
+				`run registerIssuer ${vc.data}.${vc.signature}`
 			)
 
 			for(let output of outputs){

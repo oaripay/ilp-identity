@@ -58,15 +58,14 @@ const actions = {
 			}
 		},
 		async accred(){
-			const type = args.type ?? 'TI'
+			const type = args.type ?? 'ti'
 
 			console.log(`accrediting ${args.subject.did} ...`)
 
 			const issueOutputs = await ebsiCli(
 				`issuerWallet: load ${args.issuer.wallet}`,
 				`using user issuerWallet`,
-				`run issueVcTAO ${args.subject.did}`,
-				`run preregisterIssuer ${args.subject.did} ${type} vcJwt`,
+				`run issueVcTAO ${args.subject.did}`
 			)
 
 			const vcJwt = issueOutputs.at(-1)

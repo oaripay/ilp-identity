@@ -120,7 +120,8 @@ const actions = {
 	},
 	register: {
 		async onboard(){
-			const extraCommands = []
+			if(!fs.existsSync(args.wallet))
+				throw new Error(`wallet file (--wallet) does not exist`)
 			
 			console.log(`registering did on chain ...`)
 
@@ -173,6 +174,9 @@ const actions = {
 			}
 		},
 		async accred(){
+			if(!fs.existsSync(args.wallet))
+				throw new Error(`wallet file (--wallet) does not exist`)
+
 			console.log(`registering trusted issuer on chain ...`)
 
 			const vc = JSON.parse(fs.readFileSync(args.vc, 'utf-8'))

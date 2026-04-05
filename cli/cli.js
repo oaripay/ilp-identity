@@ -38,8 +38,7 @@ const actions = {
 			console.log(`creating onboarding for ${args.subject.did} ...`)
 
 			const outputs = await ebsiCli(
-				`issuerWallet: load ${args.issuer.wallet}`,
-				`using user issuerWallet`,
+				...useIssuerWallet(),
 				`run issueVcOnboard ${args.subject.did}`
 			)
 
@@ -58,14 +57,13 @@ const actions = {
 			}
 		},
 		async accred(){
-			const type = args.type ?? 'ti'
+			const type = args.type ?? 'TI'
 
 			console.log(`accrediting ${args.subject.did} ...`)
 
 			const issueOutputs = await ebsiCli(
-				`issuerWallet: load ${args.issuer.wallet}`,
-				`using user issuerWallet`,
-				`run issueVcTAO ${args.subject.did}`
+				...useIssuerWallet(),
+				`run issueVc${type} ${args.subject.did}`
 			)
 
 			const vcJwt = issueOutputs.at(-1)
@@ -77,12 +75,40 @@ const actions = {
 			console.log(`preregistering as ${type}`)
 
 			const preregisterOutputs = await ebsiCli(
-				`issuerWallet: load ${args.issuer.wallet}`,
-				`using user issuerWallet`,
-				`run preregisterIssuer ${args.subject.did} ${type} ${vcJwt}`,
+				...useIssuerWallet(),
+				`run preregisterIssuer ${args.subject.did} ${type.toLowerCase()} ${vcJwt}`,
 			)
 
 			console.log(preregisterOutputs.at(-1))
+
+			if(args.outfile){
+				fs.writeFileSync(args.outfile, resultJson)
+				console.log(`accreditation written to ${args.outfile}`)
+			}else{
+				console.log(resultJson)
+			}
+		},
+		async license(){
+			console.log(`licensing ${args.subject.did} ...`)
+
+			const issueOutputs = await ebsiCli(
+				...useIssuerWallet(),
+				`licenseId: compute randomID`,
+				`license: load ${path.resolve(path.join(import.meta.dirname, 'ilp-license.json'))}`,
+				`set license.id licenseId`,
+				`set license.issuer issuerWallet.did`,
+				`set license.credentialSubject.id ${args.subject.did}`,
+				args.subject.country
+					? `set license.credentialSubject.country ${args.subject.country}`
+					: null,
+				`compute createVcJwt license {} ES256 1.1`
+			)
+
+			const vcJwt = issueOutputs.at(-1)
+			const [ vc ] = await ebsiCli(
+				`compute decodeJWT ${vcJwt}`
+			)
+			const resultJson = JSON.stringify(vc, null, 4)
 
 			if(args.outfile){
 				fs.writeFileSync(args.outfile, resultJson)
@@ -138,7 +164,9 @@ const actions = {
 				...extraCommands
 			)
 
-			if(outputs.at(-1).includes('did:ebsi')){
+			const lastOutput = outputs.at(-1)
+			
+			if(lastOutput.includes('did:ebsi') && !lastOutput.includes('error')){
 				console.log('successfully registered on chain')
 			}else{
 				console.log(outputs.at(-1))
@@ -167,6 +195,22 @@ const actions = {
 			startRegistry(args)
 		}
 	}
+}
+
+function useIssuerWallet(){
+	const wallet = JSON.parse(fs.readFileSync(args.issuer.wallet))
+
+	if(wallet.accreditationUrl)
+		return [
+			`issuerWallet: load ${args.issuer.wallet}`,
+			`using user issuerWallet`,
+		]
+	else return [
+		`issuerWallet: load ${args.issuer.wallet}`,
+		`issuerAttributes: tir get /issuers/ issuerWallet.did /attributes`,
+		`set issuerWallet.accreditationUrl issuerAttributes.items.0.href`,
+		`using user issuerWallet`,
+	]
 }
 
 const component = args._[0]

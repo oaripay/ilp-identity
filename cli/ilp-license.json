@@ -1,0 +1,18 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "type": ["VerifiableCredential", "ILPLicenseCredential"],
+  "id": "",
+  "issuer": "",
+  "issued": "",
+  "expiration": "",
+  "credentialSubject": {
+    "id": "",
+    "country": ""
+  },
+  "credentialSchema": {
+    "id": "ebsi:pilot:trusted-schemas-registry:/schemas/z8gvn3PUyN4HAJmCNct4cJD97uaG4rsggbDpNwiCNrKbM",
+    "type": "FullJsonSchemaValidator2021"
+  }
+}

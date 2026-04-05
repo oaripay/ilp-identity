@@ -93,7 +93,7 @@ const actions = {
 		}
 	},
 	register: {
-		async did(){
+		async onboard(){
 			const extraCommands = []
 			
 			console.log(`registering did on chain ...`)
@@ -138,13 +138,13 @@ const actions = {
 				...extraCommands
 			)
 
-			for(let output of outputs){
-				console.log(output)
+			if(outputs.at(-1).includes('did:ebsi')){
+				console.log('successfully registered on chain')
+			}else{
+				console.log(outputs.at(-1))
 			}
-
-			console.log('all done')
 		},
-		async issuer(){
+		async accred(){
 			console.log(`registering trusted issuer on chain ...`)
 
 			const vc = JSON.parse(fs.readFileSync(args.vc, 'utf-8'))
@@ -154,11 +154,11 @@ const actions = {
 				`run registerIssuer ${vc.data}.${vc.signature}`
 			)
 
-			for(let output of outputs){
-				console.log(output)
+			if(outputs.at(-1).includes('attributeId')){
+				console.log('successfully registered on chain')
+			}else{
+				console.log(outputs.at(-1))
 			}
-
-			console.log('all done')
 		}
 	},
 	registry: {
@@ -171,5 +171,4 @@ const actions = {
 
 const component = args._[0]
 const action = args._[1]
-
 await actions[component][action]()

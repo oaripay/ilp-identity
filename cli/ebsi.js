@@ -41,10 +41,11 @@ export async function ebsiCli(...commands){
 						.filter(part => part && part.length > 0)
 
 					for(let output of outputs){
-						if(output.startsWith('{'))
-							responses.push(JSON.parse(output))
-						else
+						try{
+							responses.push(JSON.parse(output.trim()))
+						}catch{
 							responses.push(output)
+						}
 					}
 
 					next()

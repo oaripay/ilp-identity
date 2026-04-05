@@ -100,18 +100,34 @@ const actions = {
 			console.log(`registering did on chain ...`)
 
 			if(args.lecr){
-				const tempFile = path.join(os.tmpdir(), 'ebsi.tmp.txt')
-				const serviceJson = JSON.stringify({
-					id: args.lecr.split('://')[1],
+				const tempFile = path.join(os.tmpdir(), 'ebsi.lecr.txt')
+				const json = JSON.stringify({
+					id: args.lecr.split('://')[1].split('/')[0],
 					type: 'LegalEntityCredentialRegistry2024',
 					serviceEndpoint: args.lecr
 				})
 
-				fs.writeFileSync(tempFile, serviceJson.replaceAll('"', '\\"'))
+				fs.writeFileSync(tempFile, json.replaceAll('"', '\\"'))
 
 				extraCommands.push(
-					`data: load ${tempFile}`,
-					`did addService user.did data`
+					`lecrService: load ${tempFile}`,
+					`did addService user.did lecrService`
+				)
+			}
+
+			if(args.ilpnodes){
+				const tempFile = path.join(os.tmpdir(), 'ebsi.ilpnodes.txt')
+				const json = JSON.stringify({
+					id: args.ilpnodes.split('://')[1].split('/')[0],
+					type: 'InterledgerEntryNodeListV1',
+					serviceEndpoint: args.ilpnodes
+				})
+
+				fs.writeFileSync(tempFile, json.replaceAll('"', '\\"'))
+
+				extraCommands.push(
+					`ilpService: load ${tempFile}`,
+					`did addService user.did ilpService`
 				)
 			}
 

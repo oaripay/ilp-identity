@@ -128,6 +128,35 @@ const actions = {
 			const extraCommands = []
 			const vc = JSON.parse(fs.readFileSync(args.vc, 'utf-8'))
 
+			if(args.registry){
+				const domain = args.registry.split('://')[1].split('/')[0].split('.').reverse()
+				const tempFile1 = path.join(os.tmpdir(), 'ebsi.ilp1.txt')
+				const tempFile2 = path.join(os.tmpdir(), 'ebsi.ilp2.txt')
+
+				const identityJson = JSON.stringify({
+					id: `${domain}.ilp.identity`,
+					type: 'InterledgerIdentityProviderV1',
+					serviceEndpoint: args.registry + '/identity'
+				})
+
+				const nodesJson = JSON.stringify({
+					id: `${domain}.ilp.nodes`,
+					type: 'InterledgerEntryNodeListV1',
+					serviceEndpoint: args.registry + '/nodes'
+				})
+
+				fs.writeFileSync(tempFile1, identityJson.replaceAll('"', '\\"'))
+				fs.writeFileSync(tempFile2, nodesJson.replaceAll('"', '\\"'))
+
+				extraCommands.push(
+					`nodeService: load ${tempFile2}`,
+					`did addService user.did nodeService`,
+					`identityService: load ${tempFile1}`,
+					`did addService user.did identityService`
+					
+				)
+			}
+
 			const outputs = await ebsiCli(
 				`userWallet: load ${args.wallet}`,
 				`using user userWallet`,

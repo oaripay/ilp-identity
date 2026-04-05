@@ -125,39 +125,9 @@ const actions = {
 			
 			console.log(`registering did on chain ...`)
 
-			if(args.lecr){
-				const tempFile = path.join(os.tmpdir(), 'ebsi.lecr.txt')
-				const json = JSON.stringify({
-					id: args.lecr.split('://')[1].split('/')[0],
-					type: 'LegalEntityCredentialRegistry2024',
-					serviceEndpoint: args.lecr
-				})
-
-				fs.writeFileSync(tempFile, json.replaceAll('"', '\\"'))
-
-				extraCommands.push(
-					`lecrService: load ${tempFile}`,
-					`did addService user.did lecrService`
-				)
-			}
-
-			if(args.ilpnodes){
-				const tempFile = path.join(os.tmpdir(), 'ebsi.ilpnodes.txt')
-				const json = JSON.stringify({
-					id: args.ilpnodes.split('://')[1].split('/')[0],
-					type: 'InterledgerEntryNodeListV1',
-					serviceEndpoint: args.ilpnodes
-				})
-
-				fs.writeFileSync(tempFile, json.replaceAll('"', '\\"'))
-
-				extraCommands.push(
-					`ilpService: load ${tempFile}`,
-					`did addService user.did ilpService`
-				)
-			}
-
+			const extraCommands = []
 			const vc = JSON.parse(fs.readFileSync(args.vc, 'utf-8'))
+
 			const outputs = await ebsiCli(
 				`userWallet: load ${args.wallet}`,
 				`using user userWallet`,
@@ -168,9 +138,39 @@ const actions = {
 			const lastOutput = outputs.at(-1)
 			
 			if(lastOutput.includes('did:ebsi') && !lastOutput.includes('error')){
-				console.log('successfully registered on chain')
+				console.log(`${vc.payload.vc.credentialSubject.id} successfully registered on chain`)
 			}else{
 				console.log(outputs.at(-1))
+				return
+			}
+
+			if(args.registry){
+				const domain = args.registry.split('://')[1].split('/')[0].split('.').reverse()
+				const tempFile1 = path.join(os.tmpdir(), 'ebsi.ilp1.txt')
+				const tempFile2 = path.join(os.tmpdir(), 'ebsi.ilp2.txt')
+
+				const identityJson = JSON.stringify({
+					id: `${domain}.ilp.identity`,
+					type: 'InterledgerIdentityProviderV1',
+					serviceEndpoint: args.registry + '/identity'
+				})
+
+				const nodesJson = JSON.stringify({
+					id: `${domain}.ilp.nodes`,
+					type: 'InterledgerEntryNodeListV1',
+					serviceEndpoint: args.registry + '/nodes'
+				})
+
+				fs.writeFileSync(tempFile1, identityJson.replaceAll('"', '\\"'))
+				fs.writeFileSync(tempFile2, nodesJson.replaceAll('"', '\\"'))
+
+				extraCommands.push(
+					`nodeService: load ${tempFile2}`,
+					`did addService user.did nodeService`,
+					`identityService: load ${tempFile1}`,
+					`did addService user.did identityService`
+					
+				)
 			}
 		},
 		async accred(){
@@ -194,7 +194,7 @@ const actions = {
 		}
 	},
 	registry: {
-		async serve(){
+		async start(){
 			console.log('starting registry')
 			startRegistry(args)
 		}

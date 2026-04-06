@@ -72,14 +72,18 @@ const actions = {
 			)
 			const resultJson = JSON.stringify(vc, null, 4)
 
-			console.log(`preregistering as ${type}`)
+			console.log(`preregistering ${vc.payload.vc.credentialSubject.id} as ${type}`)
 
 			const preregisterOutputs = await ebsiCli(
 				...useIssuerWallet(),
 				`run preregisterIssuer ${args.subject.did} ${type.toLowerCase()} ${vcJwt}`,
 			)
 
-			console.log(preregisterOutputs.at(-1))
+			if(preregisterOutputs.at(-1).includes('"revisionId"')){
+				console.log(`preregistration as ${type} successful`)
+			}else{
+				console.log(preregisterOutputs.at(-1))
+			}
 
 			if(args.outfile){
 				fs.writeFileSync(args.outfile, resultJson)
@@ -122,27 +126,30 @@ const actions = {
 		async onboard(){
 			if(!fs.existsSync(args.wallet))
 				throw new Error(`wallet file (--wallet) does not exist`)
-			
-			console.log(`registering did on chain ...`)
 
 			const extraCommands = []
 			const vc = JSON.parse(fs.readFileSync(args.vc, 'utf-8'))
+			const did = vc.payload.vc.credentialSubject.id
+
+			console.log(`registering ${did} on chain ...`)
 
 			if(args.registry){
-				const domain = args.registry.split('://')[1].split('/')[0].split('.').reverse()
+				const registry = String(args.registry).trim().replace(/^['"]|['"]$/g, '')
+				const registryUrl = new URL(registry)
+				const domain = registryUrl.hostname.split('.').reverse()
 				const tempFile1 = path.join(os.tmpdir(), 'ebsi.ilp1.txt')
 				const tempFile2 = path.join(os.tmpdir(), 'ebsi.ilp2.txt')
 
 				const identityJson = JSON.stringify({
 					id: `${domain}.ilp.identity`,
 					type: 'InterledgerIdentityProviderV1',
-					serviceEndpoint: args.registry + '/identity'
+					serviceEndpoint: registry + '/identity'
 				})
 
 				const nodesJson = JSON.stringify({
 					id: `${domain}.ilp.nodes`,
 					type: 'InterledgerEntryNodeListV1',
-					serviceEndpoint: args.registry + '/nodes'
+					serviceEndpoint: registry + '/nodes'
 				})
 
 				fs.writeFileSync(tempFile1, identityJson.replaceAll('"', '\\"'))
@@ -167,7 +174,7 @@ const actions = {
 			const lastOutput = outputs.at(-1)
 			
 			if(lastOutput.includes('did:ebsi') && !lastOutput.includes('error')){
-				console.log(`${vc.payload.vc.credentialSubject.id} successfully registered on chain`)
+				console.log(`${did} successfully registered on chain`)
 			}else{
 				console.log(outputs.at(-1))
 				return

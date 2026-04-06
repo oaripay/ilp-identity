@@ -1,2 +1,2 @@
-# Interledger Trust Toolkit
+# Interledger Identity Toolkit
 

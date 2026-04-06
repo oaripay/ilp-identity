@@ -1,7 +1,9 @@
 {
-	"name": "@oari/ilp-trust",
+	"name": "@oari/ilp-identity",
 	"type": "module",
 	"version": "1.0.0",
 	"main": "index.js",
-	"dependencies": {}
+	"dependencies": {
+		"@cef-ebsi/ebsi-did-resolver": "^4.1.0"
+	}
 }

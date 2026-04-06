@@ -1,9 +1,9 @@
 {
-	"name": "@oari/ilp-trust-cli",
+	"name": "@oari/ilp-identity-cli",
 	"type": "module",
 	"version": "1.0.0",
 	"bin": {
-		"ilp-trust": "./cli.js"
+		"ilp-identity": "./cli.js"
 	},
 	"dependencies": {
 		"@cef-ebsi/cli": "1.7.2",

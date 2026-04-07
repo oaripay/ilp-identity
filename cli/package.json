@@ -5,6 +5,11 @@
 	"bin": {
 		"ilp-identity": "./cli.js"
 	},
+	"prettier": {
+		"semi": false,
+		"singleQuote": true,
+		"useTabs": true
+	},
 	"dependencies": {
 		"@cef-ebsi/cli": "1.7.2",
 		"minimist": "1.2.8"

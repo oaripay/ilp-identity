@@ -1,18 +1,21 @@
 {
-  "@context": [
-    "https://www.w3.org/2018/credentials/v1"
-  ],
-  "type": ["VerifiableCredential", "ILPLicenseCredential"],
-  "id": "",
-  "issuer": "",
-  "issued": "",
-  "expiration": "",
-  "credentialSubject": {
-    "id": "",
-    "country": ""
-  },
-  "credentialSchema": {
-    "id": "ebsi:pilot:trusted-schemas-registry:/schemas/z8gvn3PUyN4HAJmCNct4cJD97uaG4rsggbDpNwiCNrKbM",
-    "type": "FullJsonSchemaValidator2021"
-  }
+	"@context": ["https://www.w3.org/2018/credentials/v1"],
+	"type": [
+		"VerifiableCredential",
+		"VerifiableAttestation",
+		"VerifiableAuthorisationToOnboard"
+	],
+	"issuer": "",
+	"credentialSubject": {
+		"id": "",
+		"country": ""
+	},
+	"termsOfUse": {
+		"id": "",
+		"type": "IssuanceCertificate"
+	},
+	"credentialSchema": {
+		"id": "ebsi:pilot:trusted-schemas-registry:/schemas/z4DDAmb38YoKBwT1WPBwxdczBAR4Keqxgwk3qksupjAts",
+		"type": "FullJsonSchemaValidator2021"
+	}
 }

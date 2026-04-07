@@ -1,79 +1,34 @@
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
-import chokidar from 'chokidar'
 import canonicalize from 'canonicalize'
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { prettyJSON } from 'hono/pretty-json'
+import { parseBind } from './utils.js'
 
 
-export function startRegistry({ dir, hostname = '127.0.0.1', port = 80 }){
-	if(!dir)
-		throw new Error(`registry file directory not set`)
-
-	if(!fs.existsSync(dir) || !fs.statSync(dir).isDirectory())
-		throw new Error(`registry directory is not a directory`)
-
+export function startRegistry({ bind = '127.0.0.1:80', db = 'registry.db' }){
+	const { port, hostname } = parseBind(bind)
 	const ctx = {
-		dir,
-		hostname,
+		config: {
+			port,
+			hostname
+		},
 		port,
 		credentials: new Map(),
 		watcher: null
 	}
+
 
 	startSync(ctx)
 	startServer(ctx)
 }
 
 
-function startSync(ctx){
-	const ingestFromFile = (filePath, action = 'ingested') => {
-		if(path.extname(filePath).toLowerCase() !== '.json')
-			return
 
-		try {
-			const raw = fs.readFileSync(filePath, 'utf8')
-			const entry = JSON.parse(raw)
 
-			if(!entry || typeof entry !== 'object' || !entry.id)
-				return
 
-			const existed = ctx.credentials.has(entry.id)
-			ctx.credentials.set(entry.id, entry)
-
-		if(action === 'changed' || existed)
-			console.log(`credential ${entry.id} changed (${filePath})`)
-		else
-			console.log(`new credential ${entry.id} (${filePath})`)
-		}
-		catch (error) {
-			console.warn(`invalid registry file ${filePath}:`, error.message)
-		}
-	}
-
-	const removeByFile = (filePath) => {
-		const fileName = path.basename(filePath)
-		const hash = fileName.endsWith('.json') ? fileName.slice(0, -5) : null
-
-		if(hash){
-			ctx.credentials.delete(hash)
-			console.log(`[registry] removed credential ${hash} (${filePath})`)
-		}
-	}
-
-	for(const fileName of fs.readdirSync(ctx.dir))
-		ingestFromFile(path.join(ctx.dir, fileName), 'ingested')
-
-	ctx.watcher = chokidar.watch(path.join(ctx.dir, '*.json'), {
-		ignoreInitial: true
-	})
-
-	ctx.watcher.on('add', (filePath) => ingestFromFile(filePath, 'ingested'))
-	ctx.watcher.on('change', (filePath) => ingestFromFile(filePath, 'changed'))
-	ctx.watcher.on('unlink', removeByFile)
-}
 
 function startServer(ctx){
 	const app = new Hono()
@@ -145,14 +100,14 @@ function startServer(ctx){
 		ctx.credentials.delete(credentialHash)
 		return c.body(null, 204)
 	})
-	
+
 	serve({ 
 		fetch: app.fetch,
-		port: ctx.port,
-		hostname: ctx.hostname
+		port: ctx.config.port,
+		hostname: ctx.config.hostname
 	})
 	
-	console.log(`listening on port ${ctx.port}`)
+	console.log(`listening on port ${port}`)
 }
 
 

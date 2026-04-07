@@ -1,12 +1,11 @@
 {
-	"name": "@oari/ilp-trust-registry",
+	"name": "@oari/ilp-identity-registry",
 	"type": "module",
 	"version": "1.0.0",
 	"main": "./registry.js",
 	"dependencies": {
 		"@hono/node-server": "^1.19.12",
 		"canonicalize": "^2.1.0",
-		"chokidar": "^5.0.0",
 		"hono": "^4.12.10"
 	}
 }

@@ -59,22 +59,31 @@ const actions = {
 			}
 		},
 		async accred() {
-			const type = args.type ?? 'TI'
+			const type = args.type.toUpperCase() ?? 'TI'
+			const validTypes = {
+				ROOTTAO: 'RootTao',
+				TAO: 'TAO',
+				TI: 'TI',
+			}
+			const parsedType = validTypes[type]
 
 			console.log(`accrediting ${args.subject.did} ...`)
 
 			let extraCommands = []
 			if (type === 'TI') {
-				extraCommands.push([
-					`set payloadVc${type}.credentialSubject.id ${args.subject.did}`,
-					`set payloadVc${type}.credentialSubject.accreditedFor.0.schemaId tsrUrl /schemas/${ilpSchemaId}`,
-				])
+				extraCommands.push(
+					`set payloadVc${parsedType}.credentialSubject.id ${args.subject.did}`,
+					`set payloadVc${parsedType}.credentialSubject.accreditedFor.0.schemaId tsrUrl /schemas/${ilpSchemaId}`,
+					args.subject.name
+						? `set payloadVc${parsedType}.credentialSubject.name ${args.subject.name}`
+						: null,
+				)
 			}
 			const issueOutputs = await ebsiCli(
 				...useIssuerWallet(),
-				`run issueVc${type} ${args.subject.did}`,
+				`run issueVc${parsedType} ${args.subject.did}`,
 				...extraCommands,
-				`compute createVcJwt payloadVc${type} {} ES256 1.1`,
+				`compute createVcJwt payloadVc${parsedType} {} ES256 1.1`,
 			)
 
 			const vcJwt = issueOutputs.at(-1)

@@ -5,11 +5,11 @@ import fs from 'fs'
 import path from 'path'
 import minimist from 'minimist'
 import { ebsiCli } from './ebsi.js'
-import { startRegistry } from '../registry/registry.js'
 import ilpLicense from './ilp-license.json' with { type: 'json' }
 
 const args = minimist(process.argv.slice(2))
 const ilpSchemaId = ilpLicense.credentialSchema.id.split('/').at(-1)
+console.log(ilpSchemaId)
 
 const actions = {
 	wallet: {
@@ -111,7 +111,7 @@ const actions = {
 				`license: load ${path.resolve(path.join(import.meta.dirname, 'ilp-license.json'))}`,
 				`set license.issuer issuerWallet.did`,
 				`set license.credentialSubject.id ${args.subject.did}`,
-				`set license.credentialSchema.id tsrUrl /schemas/${schemaId}`,
+				`set license.credentialSchema.id tsrUrl /schemas/${ilpSchemaId}`,
 				`set license.termsOfUse.id user.accreditationUrl`,
 				args.subject.country
 					? `set license.credentialSubject.country ${args.subject.country}`
@@ -247,7 +247,6 @@ const actions = {
 	registry: {
 		async start() {
 			console.log('starting registry')
-			startRegistry(args)
 		},
 	},
 }

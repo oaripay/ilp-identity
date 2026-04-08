@@ -5,15 +5,18 @@ import { eq } from 'drizzle-orm'
 import { entryNodes } from '../db/schema.js'
 import { randomUUID } from 'crypto'
 import { AppContext } from '../types.js'
+import { VpJwtPayload } from '@cef-ebsi/verifiable-presentation'
 
 const createNodeSchema = z.object({
 	url: z.url(),
 	did: z.string(),
+	vp: z.string(),
 })
 
 export default function publicApi(ctx: AppContext) {
 	const app = new Hono()
-	const db = ctx.db
+	const db = ctx.db!
+	const resolver = ctx.resolver!
 
 	app.get('/', async (c) => {
 		const all = await db.select().from(entryNodes)
@@ -21,9 +24,9 @@ export default function publicApi(ctx: AppContext) {
 		return c.text(text)
 	})
 
-	// TODO: node can put itself inside if it can issue a VP
+	// TODO: node can put itself inside if it can present a VP
 	app.post('/', zValidator('json', createNodeSchema), async (c) => {
-		const { url, did } = c.req.valid('json')
+		const { url, did, vp } = c.req.valid('json')
 		const id = randomUUID()
 		const [node] = await db
 			.insert(entryNodes)
@@ -32,9 +35,11 @@ export default function publicApi(ctx: AppContext) {
 		return c.json(node, 201)
 	})
 
-	// TODO: nodes can delete the endpoint from the registry if issued a VP
-	app.delete('/:id', async (c) => {
+	// TODO: nodes can delete the endpoint from the registry if VP valid
+	app.delete('/:id', zValidator('json', createNodeSchema), async (c) => {
 		const id = c.req.param('id')
+		const { url, did, vp } = c.req.valid('json')
+		resolver.resolve(did)
 		const [existing] = await db
 			.select()
 			.from(entryNodes)

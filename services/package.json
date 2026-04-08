@@ -1,8 +1,9 @@
 {
 	"name": "@oari/ilp-identity",
-	"version": "1.0.0",
+	"version": "0.0.1",
 	"description": "ILP Identity Provider and Entry Nodes Registry",
 	"main": "src/index.ts",
+	"type": "module",
 	"prettier": {
 		"semi": false,
 		"singleQuote": true,
@@ -11,13 +12,14 @@
 	"scripts": {
 		"dev": "tsx watch src/init.ts",
 		"start": "tsx src/init.ts",
-		"db:generate": "drizzle-kit generate",
+		"db:generate": "drizzle-kit generate --config ./src/db/drizzle.config.json",
 		"db:migrate": "tsx src/db/migrate.ts"
 	},
 	"homepage": "https://github.com/miksa234uni/ilp-registry#readme",
 	"dependencies": {
 		"@cef-ebsi/key-did-resolver": "^2.1.1",
 		"@cef-ebsi/verifiable-credential": "^7.2.0",
+		"@cef-ebsi/verifiable-presentation": "^8.1.0",
 		"@cef-ebsi/wallet-lib": "^6.0.2",
 		"@hono/node-server": "^1.19.13",
 		"@hono/zod-validator": "^0.7.6",

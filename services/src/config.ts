@@ -13,6 +13,13 @@ export function configFromEnv(): AppConfig {
 				file: envString('DB_SQLITE_FILE', 'registry.db'),
 			},
 		},
+		ebsi: {
+			endpoint: envString('EBSI_DOMAIN', 'https://ebsi.oari.io'),
+			ilpSchemaId: envString(
+				'EBSI_ILP_SCHEMA_ID',
+				'z4DDAmb38YoKBwT1WPBwxdczBAR4Keqxgwk3qksupjAts',
+			),
+		},
 	}
 }
 

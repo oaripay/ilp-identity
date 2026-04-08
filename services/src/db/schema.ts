@@ -37,3 +37,7 @@ export const entryNodes = sqliteTable('entry_nodes', {
 		.notNull()
 		.$defaultFn(() => new Date()),
 })
+
+export type DidDocument = typeof didDocuments.$inferSelect
+export type Credential = typeof credentials.$inferSelect
+export type EntryNode = typeof entryNodes.$inferSelect

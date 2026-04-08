@@ -148,8 +148,10 @@ const actions = {
 					.replace(/^['"]|['"]$/g, '')
 				const registryUrl = new URL(registry)
 				const domain = registryUrl.hostname.split('.').reverse()
-				const tempFile1 = path.join(os.tmpdir(), 'ebsi.ilp1.txt')
-				const tempFile2 = path.join(os.tmpdir(), 'ebsi.ilp2.txt')
+
+				const tempId = Math.random().toString(16).slice(2)
+				const tempFile1 = path.join(os.tmpdir(), `ebsi.ilp1.${tempId}.txt`)
+				const tempFile2 = path.join(os.tmpdir(), `ebsi.ilp2.${tempId}.txt`)
 
 				const identityJson = JSON.stringify({
 					id: `${domain}.ilp.identity`,

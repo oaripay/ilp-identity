@@ -1,14 +1,18 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
-import { entryNodes } from '../db/schema.js'
+import { and, eq } from 'drizzle-orm'
+import { entryNodes } from '../../db/schema.js'
 import { randomUUID } from 'crypto'
-import { AppContext } from '../types.js'
-import { verifyVpIlp } from '../verify.js'
+import { AppContext } from '../../types.js'
+import { verifyVpIlp } from '../../verify.js'
 
 const createNodeSchema = z.object({
 	url: z.url(),
+	vpJwt: z.string(),
+})
+
+const deleteNodeSchema = z.object({
 	vpJwt: z.string(),
 })
 
@@ -41,9 +45,9 @@ export default function publicApi(ctx: AppContext) {
 		return c.json(node, 201)
 	})
 
-	app.delete('/:id', zValidator('json', createNodeSchema), async (c) => {
+	app.delete('/:id', zValidator('json', deleteNodeSchema), async (c) => {
 		const id = c.req.param('id')
-		const { url, vpJwt } = c.req.valid('json')
+		const { vpJwt } = c.req.valid('json')
 		let did
 		try {
 			did = await verifyVpIlp(ctx, vpJwt)
@@ -53,11 +57,7 @@ export default function publicApi(ctx: AppContext) {
 		const [existing] = await db
 			.select()
 			.from(entryNodes)
-			.where(
-				eq(entryNodes.id, id) &&
-					eq(entryNodes.url, url) &&
-					eq(entryNodes.did, did),
-			)
+			.where(and(eq(entryNodes.id, id), eq(entryNodes.did, did)))
 
 		if (!existing) {
 			return c.json({ message: 'Entry node not found' }, 404)

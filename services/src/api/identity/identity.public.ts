@@ -1,8 +1,12 @@
-import { AppContext } from '../types.js'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { createChallenge, issueLicense, getIdentityView } from '../identity.js'
+import {
+	createChallenge,
+	issueLicense,
+	getIdentityView,
+} from '../../identity.js'
+import { AppContext } from '../../types.js'
 
 const issuePayloadSchema = z.object({
 	proof: z.object({

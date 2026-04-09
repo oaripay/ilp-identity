@@ -38,6 +38,7 @@ export function initPublicApi(ctx: AppContext) {
 		c.json({
 			name: 'InterledgerIdentityProviderV1-Public',
 			version: ctx.version,
+			did: ctx.identity.issuer!.did,
 		}),
 	)
 
@@ -73,6 +74,7 @@ export function initPrivateApi(ctx: AppContext) {
 		c.json({
 			name: 'InterledgerIdentityProviderV1-Private',
 			version: ctx.version,
+			did: ctx.identity.issuer!.did,
 		}),
 	)
 

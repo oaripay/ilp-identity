@@ -1,7 +1,7 @@
-import { AppContext } from '../types.js'
+import { AppContext } from '../../types.js'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
-import { identities, Identity } from '../db/schema.js'
+import { identities, Identity } from '../../db/schema.js'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 

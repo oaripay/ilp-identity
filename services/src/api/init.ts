@@ -36,7 +36,7 @@ export function initPublicApi(ctx: AppContext) {
 
 	app.get('/', (c) =>
 		c.json({
-			name: 'InterledgerIdentityProviderV1-Public',
+			name: 'InterledgerIdentityProviderV1',
 			version: ctx.version,
 			did: ctx.identity.issuer!.did,
 		}),

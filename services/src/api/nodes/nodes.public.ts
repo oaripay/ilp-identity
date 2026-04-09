@@ -24,6 +24,7 @@ export default function publicApi(ctx: AppContext) {
 		const all = await db.select().from(entryNodes)
 		const nodes = all.map((n) => ({
 			id: n.id,
+			did: n.did,
 			url: n.url,
 		}))
 		return c.json(nodes)

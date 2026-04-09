@@ -1,6 +1,6 @@
 {
 	"name": "@oari/ilp-identity-service",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"description": "ILP Identity Provider and Entry Nodes Registry",
 	"main": "src/index.ts",
 	"type": "module",

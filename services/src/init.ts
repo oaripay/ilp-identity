@@ -6,11 +6,12 @@ import { configFromEnv } from './config.js'
 import { initLogger, info } from './logger.js'
 import { initResolver } from './resolver.js'
 import { initIssuer } from './identity.js'
+import packageJson from '../package.json' with { type: 'json' }
 
 const config = configFromEnv()
 
 const ctx: AppContext = {
-	version: '0.0.1',
+	version: packageJson.version,
 	logger: initLogger(config),
 	config,
 	events: new EventEmitter(),

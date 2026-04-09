@@ -30,6 +30,7 @@ For public discovery, the registry only exposes:
 ```json
 {
 	"id": "uuid",
+	"did": "did:ebsi:123...",
 	"url": "https://node.example.com"
 }
 ```
@@ -38,7 +39,8 @@ For public discovery, the registry only exposes:
 
 | Method   | Endpoint     | Description                                                                                   |
 | -------- | ------------ | --------------------------------------------------------------------------------------------- |
-| `GET`    | `/nodes`     | Lists all registered entry nodes (public view: `id`, `url`).                                  |
+| `GET`    | `/`          | Lists registry name version and issuer's `did`.                                               |
+| `GET`    | `/nodes`     | Lists all registered entry nodes (public view: `id`, `did` ,`url`).                           |
 | `POST`   | `/nodes`     | Registers an entry node URL for the DID proven by `vpJwt`.                                    |
 | `DELETE` | `/nodes/:id` | Deletes the entry node record **only if** `id` matches an existing record and vpJwt is valid. |
 
@@ -72,6 +74,20 @@ Constraints:
 
 ## Endpoint Details
 
+### GET /
+
+Checks health, `name`,`version` and `did`
+
+#### Example Response (200 OK)
+
+```json
+	{
+		"name": "InterledgerIdentityProviderV1",
+		"version": "1.0.0",
+		"did": "did:ebsi:987..."
+	},
+```
+
 ### `GET /nodes`
 
 Lists all entry nodes.
@@ -82,10 +98,12 @@ Lists all entry nodes.
 [
 	{
 		"id": "1f7b8c2e-6b1d-4e0a-9c4c-2f2a2f0b9a11",
+		"did": "did:ebsi:123...",
 		"url": "https://node-a.example.com"
 	},
 	{
 		"id": "9d2a3c14-2df3-4bb5-9a42-4c09a0b7e222",
+		"did": "did:ebsi:123...",
 		"url": "https://node-b.example.com"
 	}
 ]
@@ -149,7 +167,6 @@ Deletes an entry node record, but only if the caller can prove control over the 
 1. The registry MUST verify `vpJwt` and derive `did`.
 2. The registry MUST look up a record that matches **all** of:
    - `id` from the path
-   - `url` from the request body
    - `did` derived from the verified VP
 3. If no matching record exists, deletion MUST fail with `404`.
 4. If it exists, the registry MUST delete it and return success.
@@ -160,7 +177,7 @@ Deletes an entry node record, but only if the caller can prove control over the 
 
 ```json
 {
-	"url": "https://node.example.com",
+	"id": "9d2a3c14-2df3-4bb5-9a42-4c09a0b7e222",
 	"vpJwt": "eyJ..."
 }
 ```

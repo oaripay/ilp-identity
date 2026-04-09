@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
+import { HTTPException } from 'hono/http-exception'
 import { eq } from 'drizzle-orm'
 import { entryNodes } from '../db/schema.js'
 import { randomUUID } from 'crypto'
@@ -31,7 +32,7 @@ export default function publicApi(ctx: AppContext) {
 		try {
 			did = await verifyVp(ctx, vpJwt)
 		} catch (e) {
-			return c.json({ error: 'Invalid VP JWT' }, 403)
+			return c.json({ message: `Could not verify VP: ${e}` }, 403)
 		}
 		const id = randomUUID()
 		const [node] = await db
@@ -48,7 +49,7 @@ export default function publicApi(ctx: AppContext) {
 		try {
 			did = await verifyVp(ctx, vpJwt)
 		} catch (e) {
-			return c.json({ error: `Invalid VP JWT: ${e}` }, 403)
+			return c.json({ message: `Could not verify VP: ${e}` }, 403)
 		}
 		const [existing] = await db
 			.select()
@@ -60,7 +61,7 @@ export default function publicApi(ctx: AppContext) {
 			)
 
 		if (!existing) {
-			return c.json({ error: 'Entry node not found' }, 404)
+			return c.json({ message: 'Entry node not found' }, 404)
 		}
 		await db.delete(entryNodes).where(eq(entryNodes.id, id))
 		return c.json({ message: 'Entry node deleted' })

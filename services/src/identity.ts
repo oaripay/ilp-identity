@@ -1,8 +1,10 @@
 import { AppContext } from './types.js'
 import { identities, challenges } from './db/schema.js'
 import { and, eq, lte } from 'drizzle-orm'
-import { verifyOpenId4VCI } from './resolver.js'
+import { verifyOpenId4VCI } from '@oari/ilp-identity'
+import { HTTPException } from 'hono/http-exception'
 import ilpLicense from '../ilp-license.json' with { type: 'json' }
+import { hexTo32Bytes } from './utils.js'
 import {
 	createVerifiableCredentialJwt,
 	EbsiVerifiableAttestation,
@@ -19,7 +21,7 @@ export async function initIssuer(ctx: AppContext) {
 		did: issuerWallet.did,
 		alg: 'ES256',
 		kid: issuerWallet.keys.ES256.kid as string,
-		signer: ES256Signer(issuerWallet.keys.ES256.privateKey),
+		signer: ES256Signer(hexTo32Bytes(issuerWallet.keys.ES256.privateKeyHex)),
 		accreditationId: issuerWallet.accreditationId,
 	}
 }
@@ -32,7 +34,7 @@ export async function createChallenge(ctx: AppContext, did: string) {
 		.where(eq(identities.did, did))
 
 	if (!record) {
-		throw new Error(`Identity not found for ${did}`)
+		throw new HTTPException(404, { message: `Identity not found for ${did}` })
 	}
 
 	await db
@@ -77,15 +79,15 @@ export async function issueLicense(ctx: AppContext, did: string, jwt: string) {
 		.where(eq(identities.did, did))
 
 	if (!record) {
-		throw new Error(`Identity not found for ${did}`)
+		throw new HTTPException(404, { message: `Identity not found for ${did}` })
 	}
 
 	if (record.status !== 'active') {
-		throw new Error(`Identity ${did} is not active`)
+		throw new HTTPException(409, { message: `Identity ${did} is not active` })
 	}
 	const [, payload] = jwt.split('.')
 
-	if (!payload) throw new Error('invalid proof jwt')
+	if (!payload) throw new HTTPException(401, { message: 'invalid proof jwt' })
 
 	const parsed = JSON.parse(
 		Buffer.from(payload, 'base64url').toString('utf8'),
@@ -94,9 +96,27 @@ export async function issueLicense(ctx: AppContext, did: string, jwt: string) {
 	}
 	const nonce = parsed.nonce
 
-	if (typeof nonce !== 'string') throw new Error('missing proof nonce')
+	if (typeof nonce !== 'string')
+		throw new HTTPException(400, { message: 'missing proof nonce' })
 
-	await verifyOpenId4VCI(ctx, did, jwt, nonce)
+	const [challenge] = await db
+		.select()
+		.from(challenges)
+		.where(and(eq(challenges.did, did), eq(challenges.nonce, nonce)))
+
+	if (!challenge) {
+		throw new HTTPException(404, {
+			message: `Challenge not found or expired for ${did} and nonce ${nonce}`,
+		})
+	}
+
+	try {
+		await verifyOpenId4VCI(ctx.identity.resolver!, did, jwt, nonce)
+	} catch (err) {
+		throw new HTTPException(401, {
+			message: `proof verification failed: ${err}`,
+		})
+	}
 
 	await db
 		.delete(challenges)
@@ -133,10 +153,13 @@ export async function issueLicense(ctx: AppContext, did: string, jwt: string) {
 export async function getIdentityView(ctx: AppContext, did: string) {
 	const db = ctx.db!
 
-	const [out] = await db
+	const [identity] = await db
 		.select()
 		.from(identities)
 		.where(eq(identities.did, did))
 
-	return out
+	if (!identity)
+		throw new HTTPException(404, { message: `Identity not found for ${did}` })
+
+	return identity
 }

@@ -1,7 +1,7 @@
 import { AppContext } from './types.js'
 import { DIDDocument, Resolver } from 'did-resolver'
 import { getResolver } from '@cef-ebsi/ebsi-did-resolver'
-import { Identity, challenges } from './db/schema.js'
+import { Identity } from './db/schema.js'
 import {
 	EbsiVerifiablePresentation,
 	verifyPresentationJwt,
@@ -9,17 +9,11 @@ import {
 import {
 	EbsiEnvConfiguration,
 	EbsiVerifiableAttestation,
+	ValidationError,
 	verifyCredentialJwt,
 } from '@cef-ebsi/verifiable-credential'
 import { z } from 'zod'
-import { and, eq } from 'drizzle-orm'
-import {
-	compactVerify,
-	decodeProtectedHeader,
-	importJWK,
-	jwtVerify,
-	type JWK,
-} from 'jose'
+import { HTTPException } from 'hono/http-exception'
 
 function first<T>(value: T | T[] | undefined | null): T | undefined {
 	if (!value) return undefined
@@ -27,7 +21,8 @@ function first<T>(value: T | T[] | undefined | null): T | undefined {
 }
 
 function ensureString(value: unknown, message: string): string {
-	if (typeof value !== 'string' || value.length === 0) throw new Error(message)
+	if (typeof value !== 'string' || value.length === 0)
+		throw new ValidationError(message)
 	return value
 }
 
@@ -50,12 +45,14 @@ function extractVcJwtFromVp(verifiedVp: EbsiVerifiablePresentation): string {
 		if (isEnveloped && typeof id === 'string' && id.startsWith('data:')) {
 			const commaIdx = id.indexOf(',')
 			if (commaIdx === -1)
-				throw new Error('Enveloped VC data: URL is missing a comma separator')
+				throw new ValidationError(
+					'Enveloped VC data: URL is missing a comma separator',
+				)
 			return id.slice(commaIdx + 1)
 		}
 	}
 
-	throw new Error('VP has no verifiableCredential')
+	throw new ValidationError('VP has no verifiableCredential')
 }
 
 function getCredentialSubjectDid(
@@ -72,36 +69,6 @@ function getCredentialSubjectDid(
 	)
 }
 
-function getPublicKeyJwkFromDidDocument(
-	didDocument: DIDDocument,
-	kid: string,
-): JWK {
-	const verificationMethods = Array.isArray(didDocument.verificationMethod)
-		? didDocument.verificationMethod
-		: [didDocument.verificationMethod]
-
-	const byId = (id: string) =>
-		verificationMethods.find((vm) => vm && vm.id === id)
-
-	const method = verificationMethods.find((vm) => vm && vm.id == kid)
-
-	if (!method) {
-		throw new Error(
-			`No suitable verificationMethod found in DID document (kid: ${kid ?? 'none'})`,
-		)
-	}
-
-	const jwk = method.publicKeyJwk
-
-	if (!jwk || typeof jwk !== 'object') {
-		throw new Error(
-			'Selected DID verificationMethod does not contain publicKeyJwk',
-		)
-	}
-
-	return jwk as JWK
-}
-
 function getCredentialSchemaId(verifiedVc: EbsiVerifiableAttestation): string {
 	const cs = first(verifiedVc.credentialSchema)
 
@@ -115,7 +82,8 @@ function getCredentialSchemaId(verifiedVc: EbsiVerifiableAttestation): string {
 	const schemaUrl = ensureString(schemaIdOrUrl, 'VC has no credentialSchema.id')
 
 	const schemaId = schemaUrl.split('/').at(-1)
-	if (!schemaId) throw new Error(`Invalid credentialSchema.id: ${schemaUrl}`)
+	if (!schemaId)
+		throw new ValidationError(`Invalid credentialSchema.id: ${schemaUrl}`)
 
 	return schemaId
 }
@@ -127,7 +95,7 @@ function getIssuerDid(verifiedVc: EbsiVerifiableAttestation): string {
 		const id = issuer.id
 		return ensureString(id, 'VC issuer is missing or not a string')
 	}
-	throw new Error('VC issuer is missing or not a string')
+	throw new ValidationError('VC issuer is missing or not a string')
 }
 
 function getRegistryEndpointFromDidDocument(
@@ -136,7 +104,7 @@ function getRegistryEndpointFromDidDocument(
 ): string {
 	const services = didDocument.service
 	if (!Array.isArray(services)) {
-		throw new Error(
+		throw new ValidationError(
 			`Unable to find services in DID document for issuer ${issuer}`,
 		)
 	}
@@ -152,12 +120,12 @@ function getRegistryEndpointFromDidDocument(
 		}
 	}
 
-	throw new Error(
+	throw new ValidationError(
 		"Issuer's DID document does not contain an InterledgerIdentityProviderV1 service",
 	)
 }
 
-async function fetchAndValidateIdentity(
+async function resolveILPIdentity(
 	registryEndpoint: string,
 	subjectDid: string,
 ): Promise<Identity> {
@@ -165,7 +133,7 @@ async function fetchAndValidateIdentity(
 	const response = await fetch(url)
 
 	if (!response.ok) {
-		throw new Error(
+		throw new ValidationError(
 			`Failed to fetch subject's identity from registry: ${response.status} ${response.statusText}`,
 		)
 	}
@@ -174,7 +142,7 @@ async function fetchAndValidateIdentity(
 	const validated = z.custom<Identity>().safeParse(data)
 
 	if (!validated.success) {
-		throw new Error(
+		throw new ValidationError(
 			'Invalid response from identity registry: ' +
 				JSON.stringify(validated.error),
 		)
@@ -214,17 +182,35 @@ export async function verifyVp(
 	vpJwt: string,
 ): Promise<string> {
 	const config = ctx.identity.ebsiConfig
-	if (!config) throw new Error('Identity config is not initialised')
+	if (!config) throw new ValidationError('Identity config is not initialised')
 
-	const verifiedVp = await verifyPresentationJwt(
-		vpJwt,
-		ctx.identity.issuer!.did,
-		config,
-	)
+	let verifiedVp
+	try {
+		verifiedVp = await verifyPresentationJwt(
+			vpJwt,
+			ctx.identity.issuer!.did,
+			config,
+		)
+	} catch (e) {
+		throw new HTTPException(403, { message: `Invalid VP JWT: ${e}` })
+	}
 
-	const vcJwt = extractVcJwtFromVp(verifiedVp)
+	let vcJwt: string
+	try {
+		vcJwt = extractVcJwtFromVp(verifiedVp)
+	} catch (e) {
+		throw new HTTPException(403, { message: `Invalid VC JWT in VP: ${e}` })
+	}
 
-	return await verifyVc(ctx, vcJwt)
+	let subjectDid: string
+	try {
+		subjectDid = await verifyVc(ctx, vcJwt)
+	} catch (e) {
+		throw new HTTPException(403, {
+			message: `Counld not verify VC JWT in VP: ${e}`,
+		})
+	}
+	return subjectDid
 }
 
 export async function verifyVc(
@@ -232,16 +218,16 @@ export async function verifyVc(
 	vcJwt: string,
 ): Promise<string> {
 	const config = ctx.identity.ebsiConfig
-	if (!config) throw new Error('Identity config is not initialised')
+	if (!config) throw new ValidationError('Identity config is not initialised')
 
 	const resolver = ctx.identity.resolver
-	if (!resolver) throw new Error('DID resolver is not initialised')
+	if (!resolver) throw new ValidationError('DID resolver is not initialised')
 
 	let verifiedVc
 	try {
 		verifiedVc = await verifyCredentialJwt(vcJwt, config)
 	} catch (e) {
-		throw new Error(`Invalid VC JWT: ${e}`)
+		throw new ValidationError(`Invalid VC JWT: ${e}`)
 	}
 
 	const subjectDid = getCredentialSubjectDid(verifiedVc)
@@ -249,14 +235,16 @@ export async function verifyVc(
 	const issuer = getIssuerDid(verifiedVc)
 
 	if (schemaId !== ctx.config.identity.ilpSchemaId) {
-		throw new Error(`Not ilp schema credential schema: ${schemaId}`)
+		throw new ValidationError(`Not ilp schema credential schema: ${schemaId}`)
 	}
 
 	const resolution = await resolver.resolve(issuer)
 	const didDocument = resolution.didDocument
 
 	if (!didDocument) {
-		throw new Error(`Unable to resolve DID document for issuer ${issuer}`)
+		throw new ValidationError(
+			`Unable to resolve DID document for issuer ${issuer}`,
+		)
 	}
 
 	const registryEndpoint = getRegistryEndpointFromDidDocument(
@@ -264,75 +252,13 @@ export async function verifyVc(
 		issuer,
 	)
 
-	const identity = await fetchAndValidateIdentity(registryEndpoint, subjectDid)
+	const identity = await resolveILPIdentity(registryEndpoint, subjectDid)
 
 	if (identity.status !== 'active') {
-		throw new Error(`Subject's ILP license is not active: ${identity.status}`)
+		throw new ValidationError(
+			`Subject's ILP license is not active: ${identity.status}`,
+		)
 	}
 
 	return subjectDid
-}
-
-export async function verifyOpenId4VCI(
-	ctx: AppContext,
-	did: string,
-	jwt: string,
-	nonce: string,
-): Promise<void> {
-	const db = ctx.db!
-	const resolver = ctx.identity.resolver!
-
-	const [challenge] = await db
-		.select()
-		.from(challenges)
-		.where(and(eq(challenges.did, did), eq(challenges.nonce, nonce)))
-
-	if (!challenge) {
-		throw new Error(
-			`Challenge not found or expired for ${did} and nonce ${nonce}`,
-		)
-	}
-
-	const resolution = await resolver.resolve(did)
-	const didDocument = resolution.didDocument
-
-	if (!didDocument) {
-		throw new Error(`Unable to resolve DID document fo ${did}`)
-	}
-
-	const protectedHeader = decodeProtectedHeader(jwt)
-
-	if (protectedHeader.typ !== 'openid4vci-proof+jwt') {
-		throw new Error(
-			`Invalid OpenID4VCI proof JWT typ: ${String(protectedHeader.typ)}`,
-		)
-	}
-
-	const alg = ensureString(
-		protectedHeader.alg,
-		'OpenID4VCI proof JWT header.alg is missing or not a string',
-	)
-
-	if (!['ES256K', 'ES256'].includes(alg)) {
-		throw new Error(`Unsupported OpenID4VCI proof JWT alg: ${alg}`)
-	}
-
-	const kid = protectedHeader.kid
-
-	if (!kid) {
-		throw new Error('OpenID4VCI proof JWT header.kid is missing')
-	}
-
-	const jwk = getPublicKeyJwkFromDidDocument(didDocument, kid)
-	const key = await importJWK(jwk, alg)
-
-	try {
-		await jwtVerify(jwt, key, {
-			audience: ctx.identity.issuer!.did,
-			issuer: did,
-			typ: 'openid4vci-proof+jwt',
-		})
-	} catch (e) {
-		throw new Error(`Invalid OpenID4VCI proof JWT: ${e}`)
-	}
 }

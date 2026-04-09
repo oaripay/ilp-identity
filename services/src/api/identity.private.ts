@@ -34,7 +34,10 @@ export default function privateApi(ctx: AppContext) {
 				legalInformation: identities.legalInformation,
 			})
 		if (!returnPayload) {
-			return c.json('Identity not found', 404)
+			return c.json(
+				{ message: `Identity not found internally for ${did}` },
+				404,
+			)
 		}
 		return c.json(returnPayload)
 	})
@@ -47,7 +50,10 @@ export default function privateApi(ctx: AppContext) {
 			.returning({ did: identities.did })
 
 		if (!resultIdentity.did) {
-			return c.json({ message: 'Identity not found' }, 404)
+			return c.json(
+				{ message: `Identity not found internally for ${did}` },
+				404,
+			)
 		}
 
 		return c.json(`Identity ${resultIdentity.did} deleted`)

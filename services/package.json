@@ -1,5 +1,5 @@
 {
-	"name": "@oari/ilp-identity",
+	"name": "@oari/ilp-identity-service",
 	"version": "0.0.1",
 	"description": "ILP Identity Provider and Entry Nodes Registry",
 	"main": "src/index.ts",
@@ -17,6 +17,7 @@
 	},
 	"homepage": "https://github.com/miksa234uni/ilp-registry#readme",
 	"dependencies": {
+		"@oari/ilp-identity": "file:../lib",
 		"@cef-ebsi/key-did-resolver": "^2.1.1",
 		"@cef-ebsi/verifiable-credential": "^7.2.0",
 		"@cef-ebsi/verifiable-presentation": "^8.1.0",

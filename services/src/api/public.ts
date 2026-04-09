@@ -1,9 +1,9 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
-import { logger } from 'hono/logger'
-import { parseBind } from '../utils.js'
+import { logRequestResponses, parseBind } from '../utils.js'
 import { info } from '../logger.js'
 import { AppContext } from '../types.js'
+import { HTTPException } from 'hono/http-exception'
 
 import publicApiNodes from './nodes.public.js'
 import publicApiIdentity from './identity.public.js'
@@ -12,7 +12,14 @@ export function initPublicApi(ctx: AppContext) {
 	const app = new Hono()
 	const { hostname, port } = parseBind(ctx.config.api.public)
 
-	app.use('*', logger())
+	app.onError((err, c) => {
+		if (err instanceof HTTPException) {
+			return c.json({ message: err.message }, err.status)
+		}
+		return c.json({ message: 'Internal Server Error' }, 500)
+	})
+
+	app.use(logRequestResponses(ctx, 'api/public'))
 
 	app.get('/', (c) =>
 		c.json({

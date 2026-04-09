@@ -1,9 +1,9 @@
 import { Hono } from 'hono'
-import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server'
-import { parseBind } from '../utils.js'
 import { info } from '../logger.js'
+import { logRequestResponses, parseBind } from '../utils.js'
 import { AppContext } from '../types.js'
+import { HTTPException } from 'hono/http-exception'
 
 import privateApiIdentity from './identity.private.js'
 
@@ -11,7 +11,14 @@ export function initPrivateApi(ctx: AppContext) {
 	const app = new Hono()
 	const { hostname, port } = parseBind(ctx.config.api.private)
 
-	app.use('*', logger())
+	app.onError((err, c) => {
+		if (err instanceof HTTPException) {
+			return c.json({ message: err.message }, err.status)
+		}
+		return c.json({ message: 'Internal Server Error' }, 500)
+	})
+
+	app.use(logRequestResponses(ctx, 'api/private'))
 
 	app.get('/', (c) =>
 		c.json({

@@ -14,9 +14,9 @@ const issuePayloadSchema = z.object({
 export default function publicApi(ctx: AppContext) {
 	const app = new Hono()
 
-	app.get('/:did/challenge', (c) => {
+	app.get('/:did/challenge', async (c) => {
 		const did = decodeURIComponent(c.req.param('did'))
-		return c.json(createChallenge(ctx, did))
+		return c.json(await createChallenge(ctx, did))
 	})
 
 	app.post('/:did/issue', zValidator('json', issuePayloadSchema), async (c) => {
@@ -25,9 +25,9 @@ export default function publicApi(ctx: AppContext) {
 		return c.json(await issueLicense(ctx, did, proof.jwt))
 	})
 
-	app.get('/:did', (c) => {
+	app.get('/:did', async (c) => {
 		const did = decodeURIComponent(c.req.param('did'))
-		return c.json(getIdentityView(ctx, did))
+		return c.json(await getIdentityView(ctx, did))
 	})
 
 	return app

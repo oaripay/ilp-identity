@@ -22,7 +22,7 @@ export type AppConfig = {
 	identity: {
 		ebsiEndpoint: string
 		ilpSchemaId: string
-		issuer: EbsiIssuer
+		issuerWalletFile: string
 		endpoint: string
 		licenseTTL: number
 		challengeTTL: number
@@ -37,7 +37,8 @@ export type AppContext = {
 	db?: AppDatabase
 	identity: {
 		resolver?: Resolver
-		config?: EbsiEnvConfiguration
+		issuer?: EbsiIssuer & { accreditationId: string }
+		ebsiConfig?: EbsiEnvConfiguration
 	}
 	api: {
 		public?: { close: () => void }

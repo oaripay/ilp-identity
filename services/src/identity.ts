@@ -7,6 +7,22 @@ import {
 	createVerifiableCredentialJwt,
 	EbsiVerifiableAttestation,
 } from '@cef-ebsi/verifiable-credential'
+import { ES256Signer } from 'did-jwt'
+import fs from 'fs'
+
+export function initIssuer(ctx: AppContext) {
+	const issuerWallet = JSON.parse(
+		fs.readFileSync(ctx.config.identity.issuerWalletFile, 'utf-8'),
+	)
+
+	ctx.identity.issuer = {
+		did: issuerWallet.did,
+		alg: 'ES256',
+		kid: issuerWallet.keys.ES256.kid as string,
+		signer: ES256Signer(issuerWallet.keys.ES256.privateKey),
+		accreditationId: issuerWallet.accreditationId,
+	}
+}
 
 export async function createChallenge(ctx: AppContext, did: string) {
 	const db = ctx.db!
@@ -40,7 +56,7 @@ export async function createChallenge(ctx: AppContext, did: string) {
 	return {
 		did: record.did,
 		status: record.status,
-		credential_issuer: ctx.config.identity.issuer.did,
+		credential_issuer: ctx.identity.issuer!.did,
 		credential_endpoint: `${ctx.config.identity.endpoint}/${encodeURIComponent(did)}/issue`,
 		c_nonce: challenge.nonce,
 		c_nonce_expires_in: ctx.config.identity.challengeTTL,
@@ -88,19 +104,19 @@ export async function issueLicense(ctx: AppContext, did: string, jwt: string) {
 
 	const license = ilpLicense
 	license.credentialSubject.id = did
-	license.issuer = ctx.config.identity.issuer.did
+	license.issuer = ctx.identity.issuer!.did
 	license.issuanceDate = new Date().toISOString()
 	license.issued = new Date().toISOString()
 	license.expirationDate = new Date(
 		Date.now() + ctx.config.identity.licenseTTL * 1000,
 	).toISOString()
-	//license.termsOfUse.id = ctx.config.identity.issuer.accreditationUrl
-	license.credentialSchema.id = `${ctx.config.identity.endpoint}/schemas/${ilpLicense.credentialSchema.id.split('/').at(-1)}`
+	license.termsOfUse.id = `${ctx.config.identity.endpoint}/trusted-issuers-registry/v5/issuers/${ctx.identity.issuer!.did}/attributes/${ctx.identity.issuer!.accreditationId}`
+	license.credentialSchema.id = `${ctx.config.identity.endpoint}/trusted-schemas-registry/v3/schemas/${ilpLicense.credentialSchema.id}`
 
 	return await createVerifiableCredentialJwt(
 		license as EbsiVerifiableAttestation,
-		ctx.config.identity.issuer,
-		ctx.identity.config!,
+		ctx.identity.issuer!,
+		ctx.identity.ebsiConfig!,
 	)
 }
 

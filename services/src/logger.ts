@@ -1,5 +1,5 @@
 import pino from 'pino'
-import type { AppConfig, AppContext } from './types'
+import type { AppConfig, AppContext } from './types.js'
 
 export function initLogger(config: AppConfig) {
 	return pino({

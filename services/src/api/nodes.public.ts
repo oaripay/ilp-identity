@@ -48,7 +48,7 @@ export default function publicApi(ctx: AppContext) {
 		try {
 			did = await verifyVp(ctx, vpJwt)
 		} catch (e) {
-			return c.json({ error: 'Invalid VP JWT' }, 403)
+			return c.json({ error: `Invalid VP JWT: ${e}` }, 403)
 		}
 		const [existing] = await db
 			.select()

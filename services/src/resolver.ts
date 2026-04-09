@@ -34,12 +34,25 @@ function ensureString(value: unknown, message: string): string {
 function extractVcJwtFromVp(verifiedVp: EbsiVerifiablePresentation): string {
 	const vc = first(verifiedVp.verifiableCredential)
 
-	if (typeof vc === 'string') return vc
+	if (vc && typeof vc === 'string') return vc
 
 	if (vc && typeof vc === 'object') {
-		const maybeJwt = vc.jwt
-		if (typeof maybeJwt === 'string') return maybeJwt
-		throw new Error('VP contains a VC object; expected VC JWT string')
+		const id = (vc as any).id
+		const type = (vc as any).type
+
+		const types: string[] = Array.isArray(type)
+			? type
+			: typeof type === 'string'
+				? [type]
+				: []
+		const isEnveloped = types.includes('EnvelopedVerifiableCredential')
+
+		if (isEnveloped && typeof id === 'string' && id.startsWith('data:')) {
+			const commaIdx = id.indexOf(',')
+			if (commaIdx === -1)
+				throw new Error('Enveloped VC data: URL is missing a comma separator')
+			return id.slice(commaIdx + 1)
+		}
 	}
 
 	throw new Error('VP has no verifiableCredential')
@@ -193,19 +206,19 @@ export function initResolver(ctx: AppContext) {
 	} as const satisfies EbsiEnvConfiguration
 
 	ctx.identity.resolver = didResolver
-	ctx.identity.config = config
+	ctx.identity.ebsiConfig = config
 }
 
 export async function verifyVp(
 	ctx: AppContext,
 	vpJwt: string,
 ): Promise<string> {
-	const config = ctx.identity.config
+	const config = ctx.identity.ebsiConfig
 	if (!config) throw new Error('Identity config is not initialised')
 
 	const verifiedVp = await verifyPresentationJwt(
 		vpJwt,
-		ctx.config.identity.issuer.did,
+		ctx.identity.issuer!.did,
 		config,
 	)
 
@@ -218,13 +231,18 @@ export async function verifyVc(
 	ctx: AppContext,
 	vcJwt: string,
 ): Promise<string> {
-	const config = ctx.identity.config
+	const config = ctx.identity.ebsiConfig
 	if (!config) throw new Error('Identity config is not initialised')
 
 	const resolver = ctx.identity.resolver
 	if (!resolver) throw new Error('DID resolver is not initialised')
 
-	const verifiedVc = await verifyCredentialJwt(vcJwt, config)
+	let verifiedVc
+	try {
+		verifiedVc = await verifyCredentialJwt(vcJwt, config)
+	} catch (e) {
+		throw new Error(`Invalid VC JWT: ${e}`)
+	}
 
 	const subjectDid = getCredentialSubjectDid(verifiedVc)
 	const schemaId = getCredentialSchemaId(verifiedVc)
@@ -310,7 +328,7 @@ export async function verifyOpenId4VCI(
 
 	try {
 		await jwtVerify(jwt, key, {
-			audience: ctx.config.identity.issuer.did,
+			audience: ctx.identity.issuer!.did,
 			issuer: did,
 			typ: 'openid4vci-proof+jwt',
 		})

@@ -6,6 +6,7 @@ import { initDatabase } from './db/init.js'
 import { configFromEnv } from './config.js'
 import { initLogger, info } from './logger.js'
 import { initResolver } from './resolver.js'
+import { initIssuer } from './identity.js'
 
 async function initApi(ctx: AppContext) {
 	ctx.api.public = initPublicApi(ctx)
@@ -33,6 +34,7 @@ const ctx: AppContext = {
 await initDatabase(ctx)
 await initApi(ctx)
 await initResolver(ctx)
+await initIssuer(ctx)
 
 process.once('SIGINT', () => void shutdown('SIGINT'))
 process.once('SIGTERM', () => void shutdown('SIGTERM'))

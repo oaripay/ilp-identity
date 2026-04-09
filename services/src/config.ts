@@ -3,7 +3,7 @@ import { AppConfig } from './types.js'
 export function configFromEnv(): AppConfig {
 	return {
 		logLevel: envString('LOG_LEVEL', 'info'),
-		dataDir: envString('DATA_DIR', '/opt/data'),
+		dataDir: envString('DATA_DIR', './data'),
 		api: {
 			public: envString('API_PRIVATE', '0.0.0.0:3000'),
 			private: envString('API_PUBLIC', '0.0.0.0:3001'),
@@ -19,7 +19,7 @@ export function configFromEnv(): AppConfig {
 				'EBSI_ILP_SCHEMA_ID',
 				'z4DDAmb38YoKBwT1WPBwxdczBAR4Keqxgwk3qksupjAts',
 			),
-			issuer: envString('ISSUER_DID', 'did:ebsi:z24Ux5CqJvPGoGmwF6ETPaoy'),
+			issuerWalletFile: envString('ISSUER_DID', './root.wallet.json'),
 			endpoint: envString('IDENTITY_ENDPOINT', 'http://0.0.0.0:3000/identity'),
 			licenseTTL: parseInt(envString('LICENSE_TTL_SECONDS', `${60 * 60 * 24}`)),
 			challengeTTL: parseInt(

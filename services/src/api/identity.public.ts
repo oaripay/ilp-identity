@@ -13,7 +13,6 @@ const issuePayloadSchema = z.object({
 
 export default function publicApi(ctx: AppContext) {
 	const app = new Hono()
-	const db = ctx.db!
 
 	app.get('/:did/challenge', (c) => {
 		const did = decodeDid(c.req.param('did'))

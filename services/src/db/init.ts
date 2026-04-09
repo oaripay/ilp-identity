@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import type { AppContext } from '../types'
+import type { AppContext } from '../types.js'
 
 export type AppDatabase = ReturnType<typeof drizzle>
 
@@ -24,7 +24,7 @@ export async function initDatabase(ctx: AppContext) {
 
 	const db = drizzle(sqlite)
 
-	await migrate(db, { migrationsFolder })
+	migrate(db, { migrationsFolder })
 
 	ctx.db = db
 }

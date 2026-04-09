@@ -12,3 +12,20 @@ export type OpenID4VCIChallengePayload = {
 		}
 	}
 }
+
+export type Identity = {
+	status: 'active' | 'revoked'
+	did: string
+	legalInformation: {
+		name: string
+		street: string
+		city: string
+		country: string
+		email: string
+		website: string
+		commercialRegisterNumber: string
+		vatId: string
+	}
+	vcId: string | null
+	vc: string | null
+}

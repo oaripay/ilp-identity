@@ -1,12 +1,11 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { HTTPException } from 'hono/http-exception'
 import { eq } from 'drizzle-orm'
 import { entryNodes } from '../db/schema.js'
 import { randomUUID } from 'crypto'
 import { AppContext } from '../types.js'
-import { verifyVp } from '../resolver.js'
+import { verifyVpIlp } from '../verify.js'
 
 const createNodeSchema = z.object({
 	url: z.url(),
@@ -30,7 +29,7 @@ export default function publicApi(ctx: AppContext) {
 		const { url, vpJwt } = c.req.valid('json')
 		let did
 		try {
-			did = await verifyVp(ctx, vpJwt)
+			did = await verifyVpIlp(ctx, vpJwt)
 		} catch (e) {
 			return c.json({ message: `Could not verify VP: ${e}` }, 403)
 		}
@@ -47,7 +46,7 @@ export default function publicApi(ctx: AppContext) {
 		const { url, vpJwt } = c.req.valid('json')
 		let did
 		try {
-			did = await verifyVp(ctx, vpJwt)
+			did = await verifyVpIlp(ctx, vpJwt)
 		} catch (e) {
 			return c.json({ message: `Could not verify VP: ${e}` }, 403)
 		}

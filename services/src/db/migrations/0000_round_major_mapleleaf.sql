@@ -18,6 +18,6 @@ CREATE TABLE `identities` (
 	`did` text PRIMARY KEY NOT NULL,
 	`status` text NOT NULL,
 	`legal_information` text NOT NULL,
-	`license_id` text,
-	`license` text
+	`vc_id` text,
+	`vc` text
 );

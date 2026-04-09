@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "99b37b0c-13c7-43b7-a580-745a29931959",
+  "id": "cbe20137-8d89-42bf-9dc0-e47a4cedd22f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "challenges": {
@@ -126,15 +126,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "license_id": {
-          "name": "license_id",
+        "vc_id": {
+          "name": "vc_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "license": {
-          "name": "license",
+        "vc": {
+          "name": "vc",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

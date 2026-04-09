@@ -130,8 +130,8 @@ export async function issueLicense(ctx: AppContext, did: string, jwt: string) {
 	license.expirationDate = new Date(
 		Date.now() + ctx.config.identity.licenseTTL * 1000,
 	).toISOString()
-	license.termsOfUse.id = `${ctx.config.identity.endpoint}/trusted-issuers-registry/v5/issuers/${ctx.identity.issuer!.did}/attributes/${ctx.identity.issuer!.accreditationId}`
-	license.credentialSchema.id = `${ctx.config.identity.endpoint}/trusted-schemas-registry/v3/schemas/${ilpLicense.credentialSchema.id}`
+	license.termsOfUse.id = `${ctx.config.identity.ebsiEndpoint}/trusted-issuers-registry/v5/issuers/${ctx.identity.issuer!.did}/attributes/${ctx.identity.issuer!.accreditationId}`
+	license.credentialSchema.id = `${ctx.config.identity.ebsiEndpoint}/trusted-schemas-registry/v3/schemas/${ilpLicense.credentialSchema.id}`
 
 	const vc = await createVerifiableCredentialJwt(
 		license as EbsiVerifiableAttestation,

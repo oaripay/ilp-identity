@@ -9,8 +9,8 @@ import {
 
 export type AppConfig = {
 	api: {
-		public: string
-		private: string
+		publicBind: string
+		privateBind: string
 	}
 	logLevel: string
 	dataDir: string

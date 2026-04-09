@@ -2,11 +2,11 @@ import { AppConfig } from './types.js'
 
 export function configFromEnv(): AppConfig {
 	return {
-		logLevel: envString('LOG_LEVEL', 'info'),
+		logLevel: envString('LOG_LEVEL', 'trace'),
 		dataDir: envString('DATA_DIR', './data'),
 		api: {
-			public: envString('API_PRIVATE', '0.0.0.0:3000'),
-			private: envString('API_PUBLIC', '0.0.0.0:3001'),
+			publicBind: envString('API_PUBLIC_BIND', '0.0.0.0:3000'),
+			privateBind: envString('API_PRIVATE_BIND', '0.0.0.0:3001'),
 		},
 		db: {
 			sqlite: {
@@ -19,12 +19,10 @@ export function configFromEnv(): AppConfig {
 				'EBSI_ILP_SCHEMA_ID',
 				'z4DDAmb38YoKBwT1WPBwxdczBAR4Keqxgwk3qksupjAts',
 			),
-			issuerWalletFile: envString('ISSUER_DID', './root.wallet.json'),
+			issuerWalletFile: envString('ISSUER_WALLET_FILE', './root.wallet.json'),
 			endpoint: envString('IDENTITY_ENDPOINT', 'http://0.0.0.0:3000/identity'),
 			licenseTTL: parseInt(envString('LICENSE_TTL_SECONDS', `${60 * 60 * 24}`)),
-			challengeTTL: parseInt(
-				envString('CHALLANGE_TTL_SECONDS', `${60 * 60 * 1}`),
-			),
+			challengeTTL: parseInt(envString('CHALLANGE_TTL_SECONDS', `${60 * 3}`)),
 		},
 	}
 }

@@ -17,13 +17,13 @@ export async function initApi(ctx: AppContext) {
 
 export function stopApi(ctx: AppContext) {
 	info(ctx, 'api', 'closing api servers')
-	ctx.api?.public?.close()
-	ctx.api?.private?.close()
+	ctx.api.public?.close()
+	ctx.api.private?.close()
 }
 
 export function initPublicApi(ctx: AppContext) {
 	const app = new Hono()
-	const { hostname, port } = parseBind(ctx.config.api.public)
+	const { hostname, port } = parseBind(ctx.config.api.publicBind)
 
 	app.onError((err, c) => {
 		if (err instanceof HTTPException) {
@@ -59,7 +59,7 @@ export function initPublicApi(ctx: AppContext) {
 
 export function initPrivateApi(ctx: AppContext) {
 	const app = new Hono()
-	const { hostname, port } = parseBind(ctx.config.api.private)
+	const { hostname, port } = parseBind(ctx.config.api.privateBind)
 
 	app.onError((err, c) => {
 		if (err instanceof HTTPException) {

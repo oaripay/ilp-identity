@@ -5,28 +5,34 @@ import { eq } from 'drizzle-orm'
 import { entryNodes } from '../db/schema.js'
 import { randomUUID } from 'crypto'
 import { AppContext } from '../types.js'
-import { VpJwtPayload } from '@cef-ebsi/verifiable-presentation'
+import { verifyVp } from '../resolver.js'
 
 const createNodeSchema = z.object({
 	url: z.url(),
-	did: z.string(),
-	vp: z.string(),
+	vpJwt: z.string(),
 })
 
 export default function publicApi(ctx: AppContext) {
 	const app = new Hono()
 	const db = ctx.db!
-	const resolver = ctx.resolver!
 
 	app.get('/', async (c) => {
 		const all = await db.select().from(entryNodes)
-		const text = all.map((n) => n.url).join('\n')
-		return c.text(text)
+		const nodes = all.map((n) => ({
+			id: n.id,
+			url: n.url,
+		}))
+		return c.json(nodes)
 	})
 
-	// TODO: node can put itself inside if it can present a VP
 	app.post('/', zValidator('json', createNodeSchema), async (c) => {
-		const { url, did, vp } = c.req.valid('json')
+		const { url, vpJwt } = c.req.valid('json')
+		let did
+		try {
+			did = await verifyVp(ctx, vpJwt)
+		} catch (e) {
+			return c.json({ error: 'Invalid VP JWT' }, 403)
+		}
 		const id = randomUUID()
 		const [node] = await db
 			.insert(entryNodes)
@@ -35,15 +41,24 @@ export default function publicApi(ctx: AppContext) {
 		return c.json(node, 201)
 	})
 
-	// TODO: nodes can delete the endpoint from the registry if VP valid
 	app.delete('/:id', zValidator('json', createNodeSchema), async (c) => {
 		const id = c.req.param('id')
-		const { url, did, vp } = c.req.valid('json')
-		resolver.resolve(did)
+		const { url, vpJwt } = c.req.valid('json')
+		let did
+		try {
+			did = await verifyVp(ctx, vpJwt)
+		} catch (e) {
+			return c.json({ error: 'Invalid VP JWT' }, 403)
+		}
 		const [existing] = await db
 			.select()
 			.from(entryNodes)
-			.where(eq(entryNodes.id, id))
+			.where(
+				eq(entryNodes.id, id) &&
+					eq(entryNodes.url, url) &&
+					eq(entryNodes.did, did),
+			)
+
 		if (!existing) {
 			return c.json({ error: 'Entry node not found' }, 404)
 		}

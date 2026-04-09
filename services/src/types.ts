@@ -2,7 +2,10 @@ import type { Logger } from 'pino'
 import type { AppDatabase } from './db/init.ts'
 import { Resolver } from 'did-resolver'
 import type { EventEmitter } from 'node:events'
-import { EbsiEnvConfiguration } from '@cef-ebsi/verifiable-credential'
+import {
+	EbsiEnvConfiguration,
+	EbsiIssuer,
+} from '@cef-ebsi/verifiable-credential'
 
 export type AppConfig = {
 	api: {
@@ -16,9 +19,13 @@ export type AppConfig = {
 			file: string
 		}
 	}
-	ebsi: {
-		endpoint: string
+	identity: {
+		ebsiEndpoint: string
 		ilpSchemaId: string
+		issuer: EbsiIssuer
+		endpoint: string
+		licenseTTL: number
+		challengeTTL: number
 	}
 }
 

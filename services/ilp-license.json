@@ -1,0 +1,26 @@
+{
+	"@context": ["https://www.w3.org/2018/credentials/v1"],
+	"id": "",
+	"type": [
+		"VerifiableCredential",
+		"VerifiableAttestation",
+		"VerifiableAuthorisationToOnboard"
+	],
+	"issuer": "",
+	"issuanceDate": "",
+	"validFrom": "",
+	"validUntil": "",
+	"expirationDate": "",
+	"issued": "",
+	"credentialSubject": {
+		"id": ""
+	},
+	"termsOfUse": {
+		"id": "",
+		"type": "IssuanceCertificate"
+	},
+	"credentialSchema": {
+		"id": "ebsi:pilot:trusted-schemas-registry:/schemas/z4DDAmb38YoKBwT1WPBwxdczBAR4Keqxgwk3qksupjAts",
+		"type": "FullJsonSchemaValidator2021"
+	}
+}

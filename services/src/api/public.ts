@@ -1,18 +1,25 @@
-import { AppContext } from './types.js'
 import { serve } from '@hono/node-server'
-import publicApiNodes from './api/nodes.public.js'
-import publicApiIdentity from './api/identity.public.js'
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
-import { parseBind } from './utils.js'
-import { info } from './logger.js'
+import { parseBind } from '../utils.js'
+import { info } from '../logger.js'
+import { AppContext } from '../types.js'
+
+import publicApiNodes from './nodes.public.js'
+import publicApiIdentity from './identity.public.js'
 
 export function initPublicApi(ctx: AppContext) {
 	const app = new Hono()
 	const { hostname, port } = parseBind(ctx.config.api.public)
 
 	app.use('*', logger())
-	app.get('/', (c) => c.text('Public endpoint'))
+
+	app.get('/', (c) =>
+		c.json({
+			name: 'InterledgerIdentityProviderV1-Public',
+			version: ctx.version,
+		}),
+	)
 
 	app.route('/nodes', publicApiNodes(ctx))
 
@@ -24,7 +31,7 @@ export function initPublicApi(ctx: AppContext) {
 		hostname,
 	})
 
-	info(ctx, 'api/private', `public api listening on ${hostname}:${port}`)
+	info(ctx, 'public', `public api listening on ${hostname}:${port}`)
 
 	return server
 }

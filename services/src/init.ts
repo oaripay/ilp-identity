@@ -1,23 +1,11 @@
 import { EventEmitter } from 'node:events'
 import { AppContext } from './types.js'
-import { initPublicApi } from './public.js'
-import { initPrivateApi } from './private.js'
+import { initApi, stopApi } from './api/init.js'
 import { initDatabase } from './db/init.js'
 import { configFromEnv } from './config.js'
 import { initLogger, info } from './logger.js'
 import { initResolver } from './resolver.js'
 import { initIssuer } from './identity.js'
-
-async function initApi(ctx: AppContext) {
-	ctx.api.public = initPublicApi(ctx)
-	ctx.api.private = initPrivateApi(ctx)
-}
-
-export function stopApi(ctx: AppContext) {
-	info(ctx, 'api', 'closing api servers')
-	ctx.api?.public?.close()
-	ctx.api?.private?.close()
-}
 
 const config = configFromEnv()
 

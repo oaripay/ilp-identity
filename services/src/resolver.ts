@@ -182,7 +182,7 @@ async function fetchAndValidateIdentity(
 	return validated.data
 }
 
-export function initResolver(ctx: AppContext) {
+export async function initResolver(ctx: AppContext) {
 	const resolverConfig = {
 		registry: `${ctx.config.identity.ebsiEndpoint}/did-registry/v5/identifiers`,
 	}

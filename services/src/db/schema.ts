@@ -14,9 +14,20 @@ export type EntryNode = typeof entryNodes.$inferSelect
 export const identities = sqliteTable('identities', {
 	did: text('did').primaryKey(),
 	status: text('status', { enum: ['active', 'revoked'] }).notNull(),
-	legalInformation: text('legal_information').notNull(),
-	licenseId: text('license_id'),
-	license: text('license'),
+	legalInformation: text('legal_information', { mode: 'json' })
+		.$type<{
+			name: string
+			street: string
+			city: string
+			country: string
+			email: string
+			website: string
+			commercialRegisterNumber: string
+			vatId: string
+		}>()
+		.notNull(),
+	vcId: text('vc_id'),
+	vc: text('vc'),
 })
 
 export type Identity = typeof identities.$inferSelect

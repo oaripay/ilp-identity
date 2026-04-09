@@ -10,7 +10,7 @@ import {
 import { ES256Signer } from 'did-jwt'
 import fs from 'fs'
 
-export function initIssuer(ctx: AppContext) {
+export async function initIssuer(ctx: AppContext) {
 	const issuerWallet = JSON.parse(
 		fs.readFileSync(ctx.config.identity.issuerWalletFile, 'utf-8'),
 	)
@@ -113,11 +113,21 @@ export async function issueLicense(ctx: AppContext, did: string, jwt: string) {
 	license.termsOfUse.id = `${ctx.config.identity.endpoint}/trusted-issuers-registry/v5/issuers/${ctx.identity.issuer!.did}/attributes/${ctx.identity.issuer!.accreditationId}`
 	license.credentialSchema.id = `${ctx.config.identity.endpoint}/trusted-schemas-registry/v3/schemas/${ilpLicense.credentialSchema.id}`
 
-	return await createVerifiableCredentialJwt(
+	const vc = await createVerifiableCredentialJwt(
 		license as EbsiVerifiableAttestation,
 		ctx.identity.issuer!,
 		ctx.identity.ebsiConfig!,
 	)
+
+	const vcId = crypto.randomUUID()
+
+	await db
+		.update(identities)
+		.set({ status: 'active', vcId, vc })
+		.where(eq(identities.did, did))
+		.returning({ did: identities.did })
+
+	return vc
 }
 
 export async function getIdentityView(ctx: AppContext, did: string) {

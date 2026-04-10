@@ -11,7 +11,7 @@ import {
 import { Resolver } from 'did-resolver'
 import {
 	resolveILPIdentity,
-	resolveRegistryEndpointFromDidDocument,
+	resolveILPRegistryEndpointFromDidDocument,
 } from './resolver.ilp.js'
 
 function first<T>(value: T | T[] | undefined | null): T | undefined {
@@ -142,7 +142,7 @@ export async function verifyVcIlp(
 		)
 	}
 
-	const registryEndpoint = resolveRegistryEndpointFromDidDocument(
+	const registryEndpoint = resolveILPRegistryEndpointFromDidDocument(
 		didDocument,
 		issuer,
 	)

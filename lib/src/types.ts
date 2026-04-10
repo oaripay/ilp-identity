@@ -29,7 +29,7 @@ export interface WalletKeyInfo {
 }
 
 export interface Wallet {
-	accreditationUrl?: string
+	accreditationId?: string
 	address?: EthereumAddress
 	did: string
 	didVersion: 1

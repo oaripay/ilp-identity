@@ -33,7 +33,7 @@ export async function resolveILPIdentity(
 	return validated.data
 }
 
-export function resolveRegistryEndpointFromDidDocument(
+export function resolveILPRegistryEndpointFromDidDocument(
 	didDocument: DIDDocument,
 	issuer: string,
 ): string {

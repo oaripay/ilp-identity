@@ -9,10 +9,7 @@ import type { JWK } from 'jose'
 import { WalletKeyInfo, Wallet, EthereumAddress } from './types'
 import { Buffer } from 'node:buffer'
 import { keccak_256 } from '@noble/hashes/sha3'
-
-export function isEthereumAddress(value: string): value is EthereumAddress {
-	return /^0x[0-9a-fA-F]{40}$/.test(value)
-}
+import { base64urlToBytes } from './wallet.validate.js'
 
 function hexToBytes(hex: string): Uint8Array {
 	const h = hex.startsWith('0x') ? hex.slice(2) : hex
@@ -30,12 +27,6 @@ export function ethAddressFromUncompressedPublicKeyHex(
 	const hash = keccak_256(pub.slice(1)) // 64 bytes (x||y)
 	const addrBytes = hash.slice(-20)
 	return `0x${Buffer.from(addrBytes).toString('hex')}` as EthereumAddress
-}
-
-function base64urlToBytes(input: string): Uint8Array {
-	const b64 = input.replace(/-/g, '+').replace(/_/g, '/')
-	const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4))
-	return Uint8Array.from(Buffer.from(b64 + pad, 'base64'))
 }
 
 function bytesToHex(bytes: Uint8Array): string {

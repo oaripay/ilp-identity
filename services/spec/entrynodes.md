@@ -1,6 +1,6 @@
 ## ILP Entry Nodes Registry (Public) — Specification
 
-This document describes the functionality and API signatures of the **ILP Entry Nodes Registry** public endpoint. The registry is a self-contained program that is publicly accessible over HTTP and provides discovery and self-service registration of ILP Entry Nodes.
+This document describes the functionality and API signatures of the **ILP Entry Nodes Registry** `InterledgerEntryNodeListV1` public endpoint. The registry is a self-contained program that is publicly accessible over HTTP and provides discovery and self-service registration of ILP Entry Nodes.
 
 ## Fundamental Concept
 

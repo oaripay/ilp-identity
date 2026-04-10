@@ -36,17 +36,39 @@ export async function resolveILPIdentity(
 	return validated.data
 }
 
-// TODO:
-// export function resolveILPEntryNodeEndpointFromDidDocument(
-
-export function resolveILPRegistryEndpointFromDidDocument(
+export function resolveILPEntryNodeEndpointFromDidDocument(
 	didDocument: DIDDocument,
-	issuer: string,
 ): string {
 	const services = didDocument.service
 	if (!Array.isArray(services)) {
 		throw new ValidationError(
-			`Unable to find services in DID document for issuer ${issuer}`,
+			`Unable to find services in DID document for issuer ${didDocument.id}`,
+		)
+	}
+
+	for (const service of services) {
+		if (
+			service &&
+			typeof service === 'object' &&
+			service.type === 'InterledgerEntryNodeListV1'
+		) {
+			const endpoint = first(service.serviceEndpoint)
+			if (typeof endpoint === 'string' && endpoint.length > 0) return endpoint
+		}
+	}
+
+	throw new ValidationError(
+		"Issuer's DID document does not contain an InterledgerEntryNodeListV1 service",
+	)
+}
+
+export function resolveILPRegistryEndpointFromDidDocument(
+	didDocument: DIDDocument,
+): string {
+	const services = didDocument.service
+	if (!Array.isArray(services)) {
+		throw new ValidationError(
+			`Unable to find services in DID document for issuer ${didDocument.id}`,
 		)
 	}
 

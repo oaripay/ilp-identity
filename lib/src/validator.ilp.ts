@@ -142,10 +142,8 @@ export async function verifyVcIlp(
 		)
 	}
 
-	const registryEndpoint = resolveILPRegistryEndpointFromDidDocument(
-		didDocument,
-		issuer,
-	)
+	const registryEndpoint =
+		resolveILPRegistryEndpointFromDidDocument(didDocument)
 
 	const identity = await resolveILPIdentity(registryEndpoint, subjectDid)
 

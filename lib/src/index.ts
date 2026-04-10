@@ -1,6 +1,5 @@
-export { verifyOpenId4VCI } from './openid4vci.ilp.js'
-export { ValidationError } from './errors.js'
-export {
-	resolveILPIdentity,
-	resolveRegistryEndpointFromDidDocument,
-} from './resolver.ilp.js'
+export * from './openid4vci.ilp.js'
+export * from './errors.js'
+export * from './resolver.ilp.js'
+export * from './validator.ilp.js'
+export * from './did.js'

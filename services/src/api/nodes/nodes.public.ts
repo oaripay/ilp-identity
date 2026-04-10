@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm'
 import { entryNodes } from '../../db/schema.js'
 import { randomUUID } from 'crypto'
 import { AppContext } from '../../types.js'
-import { verifyVpIlp } from '../../verify.js'
+import { verifyVpIlp } from '@oari/ilp-identity'
 
 const createNodeSchema = z.object({
 	url: z.url(),
@@ -34,7 +34,13 @@ export default function publicApi(ctx: AppContext) {
 		const { url, vpJwt } = c.req.valid('json')
 		let did
 		try {
-			did = await verifyVpIlp(ctx, vpJwt)
+			did = await verifyVpIlp(
+				vpJwt,
+				ctx.identity.issuer!.did,
+				ctx.config.identity.ilpSchemaId,
+				ctx.identity.resolver!,
+				ctx.identity.ebsiConfig!,
+			)
 		} catch (e) {
 			return c.json({ message: `Could not verify VP: ${e}` }, 403)
 		}
@@ -51,7 +57,13 @@ export default function publicApi(ctx: AppContext) {
 		const { vpJwt } = c.req.valid('json')
 		let did
 		try {
-			did = await verifyVpIlp(ctx, vpJwt)
+			did = await verifyVpIlp(
+				vpJwt,
+				ctx.identity.issuer!.did,
+				ctx.config.identity.ilpSchemaId,
+				ctx.identity.resolver!,
+				ctx.identity.ebsiConfig!,
+			)
 		} catch (e) {
 			return c.json({ message: `Could not verify VP: ${e}` }, 403)
 		}

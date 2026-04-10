@@ -3,7 +3,10 @@ import { Wallet, OpenID4VCIChallengePayload } from './types'
 import { ES256KSigner } from 'did-jwt'
 import { z } from 'zod'
 
-export async function resolveILPVC(issuerEndpoint: string, wallet: Wallet) {
+export async function resolveILPVC(
+	issuerEndpoint: string,
+	wallet: Wallet,
+): Promise<string> {
 	const responsePayload = await fetch(`${issuerEndpoint}/challenge`, {
 		method: 'GET',
 	})

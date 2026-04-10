@@ -1,15 +1,26 @@
 import { EbsiWallet } from '@cef-ebsi/wallet-lib'
-import {
-	calculateJwkThumbprint,
-	exportJWK,
-	exportSPKI,
-	generateKeyPair,
-} from 'jose'
+import { calculateJwkThumbprint, exportJWK, exportSPKI } from 'jose'
 import type { JWK } from 'jose'
 import { WalletKeyInfo, Wallet, EthereumAddress } from './types'
 import { Buffer } from 'node:buffer'
+import {
+	generateKeyPair as nodeGenerateKeyPair,
+	type KeyObject,
+} from 'node:crypto'
+import { promisify } from 'node:util'
 import { keccak_256 } from '@noble/hashes/sha3'
 import { base64urlToBytes } from './wallet.validate.js'
+
+const generateKeyPairAsync = promisify(nodeGenerateKeyPair)
+
+async function generateEcKeyPair(
+	namedCurve: 'secp256k1' | 'prime256v1',
+): Promise<{ publicKey: KeyObject; privateKey: KeyObject }> {
+	const { publicKey, privateKey } = await generateKeyPairAsync('ec', {
+		namedCurve,
+	})
+	return { publicKey, privateKey }
+}
 
 function hexToBytes(hex: string): Uint8Array {
 	const h = hex.startsWith('0x') ? hex.slice(2) : hex
@@ -59,7 +70,7 @@ function jwkEcPrivateKeyToHex(jwk: JWK): `0x${string}` {
 
 async function buildKeyInfo(
 	did: string,
-	keyPair: { publicKey: unknown; privateKey: unknown },
+	keyPair: { publicKey: KeyObject; privateKey: KeyObject },
 ): Promise<WalletKeyInfo> {
 	const publicKeyJwk = (await exportJWK(keyPair.publicKey as any)) as JWK
 	const privateKeyJwk = (await exportJWK(keyPair.privateKey as any)) as JWK
@@ -82,8 +93,9 @@ async function buildKeyInfo(
 export async function createWallet(): Promise<Wallet> {
 	const did = EbsiWallet.createDid()
 
-	const pairES256K = await generateKeyPair('ES256K')
-	const pairES256 = await generateKeyPair('ES256')
+	const pairES256K = await generateEcKeyPair('secp256k1')
+	const pairES256 = await generateEcKeyPair('prime256v1')
+
 	const es256kInfo = await buildKeyInfo(did, pairES256K)
 	const es256Info = await buildKeyInfo(did, pairES256)
 

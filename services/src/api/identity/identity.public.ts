@@ -26,7 +26,7 @@ export default function publicApi(ctx: AppContext) {
 	app.post('/:did/issue', zValidator('json', issuePayloadSchema), async (c) => {
 		const did = decodeURIComponent(c.req.param('did'))
 		const { proof } = c.req.valid('json')
-		return c.json(await issueLicense(ctx, did, proof.jwt))
+		return c.json({ vc: await issueLicense(ctx, did, proof.jwt) })
 	})
 
 	app.get('/:did', async (c) => {

@@ -26,6 +26,8 @@ export async function initIssuer(ctx: AppContext) {
 	}
 }
 
+// TODO: sign challange with issuers private key
+// then verify signature when node gets the payload
 export async function createChallenge(ctx: AppContext, did: string) {
 	const db = ctx.db!
 	const [record] = await db

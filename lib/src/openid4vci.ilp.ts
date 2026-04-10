@@ -2,7 +2,7 @@ import { DIDDocument, Resolver } from 'did-resolver'
 import { decodeProtectedHeader, importJWK, jwtVerify, type JWK } from 'jose'
 import { ValidationError } from './errors.js'
 import { ensureString } from './utils.js'
-import { createJWT, ES256Signer, Signer } from 'did-jwt'
+import { createJWT, Signer } from 'did-jwt'
 import { OpenID4VCIChallengePayload } from './types.js'
 
 function getPublicKeyJwkFromDidDocument(
@@ -78,14 +78,14 @@ export async function verifyOpenId4VCI(
 		await jwtVerify(jwt, key, {
 			audience,
 			issuer: did,
-			typ: 'openid4vci-proof+jwt',
+			typ: 'JWT',
 		})
 	} catch (e) {
 		throw new ValidationError(`Invalid OpenID4VCI proof JWT: ${e}`)
 	}
 }
 
-export async function createOpenId4VciProofJwt(
+export async function signOpenId4Vci(
 	challengePayload: OpenID4VCIChallengePayload,
 	holderDid: string,
 	audience: string,
@@ -107,20 +107,4 @@ export async function createOpenId4VciProofJwt(
 			typ: 'JWT',
 		},
 	)
-}
-
-export async function postOpenId4VciProofJwt(
-	challangePayload: OpenID4VCIChallengePayload,
-	vciJwt: string,
-): Promise<Response> {
-	const response = await fetch(challangePayload.credential_endpoint, {
-		method: 'POST',
-		body: JSON.stringify({
-			proof: {
-				proof_type: 'jwt',
-				jwt: vciJwt,
-			},
-		}),
-	})
-	return response
 }

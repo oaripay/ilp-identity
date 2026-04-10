@@ -8,6 +8,9 @@ function first<T>(value: T | T[] | undefined | null): T | undefined {
 	return Array.isArray(value) ? value[0] : value
 }
 
+// TODO: challange can be signed by the issuer
+// validate the signature by resolving the issuer's did document
+// and verifying the signature with the appropriate public key
 export async function resolveILPIdentity(
 	registryEndpoint: string,
 	subjectDid: string,
@@ -32,6 +35,9 @@ export async function resolveILPIdentity(
 	}
 	return validated.data
 }
+
+// TODO:
+// export function resolveILPEntryNodeEndpointFromDidDocument(
 
 export function resolveILPRegistryEndpointFromDidDocument(
 	didDocument: DIDDocument,
